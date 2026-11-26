@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=18">
+<link rel="stylesheet" href="styles.css?v=19">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -102,7 +102,7 @@ if (!configured) {
     const el = document.getElementById("qr");
     if (!el || !window.QRCode) return;
     el.innerHTML = "";
-    new QRCode(el, { text: JOIN_URL, width: size, height: size, colorDark: "#000000", colorLight: "#ffffff" });
+    new QRCode(el, { text: JOIN_URL, width: size, height: size, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.L });   // L = fewest, biggest squares: easiest to scan from across a room
   }
   const joinStrip = () => `<div class="join"><div class="url">Join at<br><b>${esc(JOIN)}</b></div><div class="qr" id="qr"></div></div>`;
   const nameOf = (id) => players[id]?.name || "Guest";
@@ -234,12 +234,14 @@ if (!configured) {
       const order = [...new Set(list.map((a) => a.uid))];
       const who = (id) => players[id]?.name || `Guest ${order.indexOf(id) + 1}`;
       if (fresh) {
-        app.innerHTML = `<div class="stage">
-          <div class="top"><div><div class="label">Navanax</div><h1>Log in</h1><div class="sub">Hint: <b>${esc(HINT)}</b></div>${PASSWORD_NOTE ? `<div class="sub">${esc(PASSWORD_NOTE)}</div>` : ""}</div>
-            <div class="tally"><div class="n" id="in">0</div><div class="t">in · <span id="tries">0</span> attempts</div></div></div>
-          <div class="wall" id="wall"></div>
-          <div class="bottom">${joinStrip()}</div></div>`;
-        qr(Math.min(140, innerHeight * .15));
+        app.innerHTML = `<div class="stage loginstage">
+          <div class="loginmain">
+            <div class="top"><div><div class="label">Navanax</div><h1>Log in</h1><div class="sub">Hint: <b>${esc(HINT)}</b></div>${PASSWORD_NOTE ? `<div class="sub">${esc(PASSWORD_NOTE)}</div>` : ""}</div>
+              <div class="tally"><div class="n" id="in">0</div><div class="t">in · <span id="tries">0</span> attempts</div></div></div>
+            <div class="wall" id="wall"></div>
+          </div>
+          <div class="bigjoin"><div class="qr" id="qr"></div><div class="url">Scan to join<br><b>${esc(JOIN)}</b></div></div></div>`;
+        qr(Math.min(innerWidth * .34, innerHeight * .68));
       }
       document.getElementById("in").textContent = new Set(list.filter((a) => a.ok).map((a) => a.uid)).size;
       document.getElementById("tries").textContent = list.length;
@@ -255,7 +257,7 @@ if (!configured) {
           <div class="top"><div><div class="label">Navanax</div><h1>Rules</h1></div></div>
           <ol class="rules">${RULES.map((r) => `<li>${esc(r)}</li>`).join("")}</ol>
           <div class="bottom">${joinStrip()}</div></div>`;
-        qr(Math.min(84, innerHeight * .09));
+        qr(Math.min(220, innerHeight * .24));
       }
       return;
     }
@@ -289,7 +291,7 @@ if (!configured) {
             <div class="tally"><div class="n" id="n">0</div><div class="t">of <span id="tot">0</span> answered</div></div></div>
           ${body}
           <div class="bottom"><div class="lb" id="lb"></div>${joinStrip()}</div></div>`;
-        qr(Math.min(84, innerHeight * .09));
+        qr(Math.min(150, innerHeight * .16));
         if (reveal && Q.reveal?.chart) drawChart(Q.reveal.chart);
       }
       document.getElementById("n").textContent = list.length;

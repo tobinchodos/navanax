@@ -184,3 +184,11 @@ button { cursor: pointer; }
 .revealwrap.withbars .big { font-size: clamp(28px, 3.4vw, 56px); }
 .revealwrap.withbars .cap { max-width: 80ch; }
 .revealwrap.withbars { gap: clamp(24px, 4vh, 44px); }
+
+/* big join QR on the login screen */
+.loginstage { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) auto; gap: clamp(24px, 4vw, 72px); }
+.loginmain { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: clamp(16px, 3vh, 36px); min-height: 0; }
+.bigjoin { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+.bigjoin .qr { background: #fff; padding: 14px; line-height: 0; }
+.bigjoin .url { text-align: center; color: var(--dim); font-size: clamp(16px, 1.6vw, 28px); }
+.bigjoin .url b { color: var(--ink); font-weight: 500; }

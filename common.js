@@ -111,6 +111,7 @@ export function scoreboard(QUESTIONS, state, players, answers) {
   const sets = QUESTIONS.map((Q, i) => (i < upto && isScored(Q) ? correctSet(Q, i, answers, state.marks) : null));
   return Object.entries(players).map(([id, p]) => {
     const marks = QUESTIONS.map((Q, i) => (sets[i] ? sets[i].has(id) : null));
-    return { id, name: p.name, t: p.t || 0, marks, pts: marks.filter((x) => x === true).length };
+    const bonus = Number((state.bonus && state.bonus[id]) || 0);
+    return { id, name: p.name, t: p.t || 0, marks, bonus, pts: marks.filter((x) => x === true).length + bonus };
   }).sort((x, y) => y.pts - x.pts || x.t - y.t);
 }

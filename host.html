@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=15">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -22,7 +22,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("app");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("app"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, RULES, PASSWORD_NOTE, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=10";
+import { configured, connect, QUESTIONS, HINT, RULES, PASSWORD_NOTE, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=11";
 const app = document.getElementById("app");
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -78,6 +78,15 @@ if (!configured) {
   }
 
   // On a reveal screen, clicking an answer flips it between right and wrong.
+  // Scoreboard: + / − bonus points for any player, any time (host only).
+  app.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-bonus]");
+    if (!isHost || !b) return;
+    const id = b.dataset.bonus, bonus = { ...(state.bonus || {}) };
+    bonus[id] = (Number(bonus[id]) || 0) + Number(b.dataset.d);
+    if (!bonus[id]) delete bonus[id];
+    setState({ bonus });
+  });
   app.addEventListener("click", (e) => {
     const el = e.target.closest("[data-id]");
     const Q = QUESTIONS[state.q];
@@ -203,19 +212,19 @@ if (!configured) {
       `<div class="lbr"><span class="lbn">${i + 1}</span><span class="lbm">${esc(r.name)}</span><span class="lbp">${r.pts}</span></div>`).join("") : "";
   }
 
-  function boardHTML() {
+  function boardHTML(still) {
     const rows = scoreboard(QUESTIONS, state, players, answers);
     const cols = QUESTIONS.map((Q, i) => (isScored(Q) ? i : -1)).filter((i) => i >= 0);
     return `<div class="stage" style="grid-template-rows:auto minmax(0,1fr)">
       <div class="top"><div><div class="label">Navanax</div><h1>Scoreboard</h1></div></div>
-      <div class="board-wrap"><table class="board"><thead><tr><th></th><th></th>${cols.map((i) => `<th>${i + 1}</th>`).join("")}<th>Total</th></tr></thead>
+      <div class="board-wrap"><table class="board ${still ? "still" : ""}"><thead><tr><th></th><th></th>${cols.map((i) => `<th>${i + 1}</th>`).join("")}<th>Bonus</th><th>Total</th></tr></thead>
       <tbody>${rows.map((r, n) => `<tr style="animation-delay:${n * 70}ms"><td class="rk">${n === 0 || r.pts !== rows[n - 1].pts ? n + 1 : ""}</td><td class="nm">${esc(r.name)}</td>
-        ${cols.map((i) => `<td class="mk">${r.marks[i] === true ? "✓" : r.marks[i] === false ? "·" : ""}</td>`).join("")}<td class="pts">${r.pts}</td></tr>`).join("")
+        ${cols.map((i) => `<td class="mk">${r.marks[i] === true ? "✓" : r.marks[i] === false ? "·" : ""}</td>`).join("")}<td class="bonus">${isHost ? `<button data-bonus="${esc(r.id)}" data-d="-1" aria-label="Remove a point">−</button>` : ""}<span>${r.bonus > 0 ? "+" + r.bonus : r.bonus || ""}</span>${isHost ? `<button data-bonus="${esc(r.id)}" data-d="1" aria-label="Add a point">+</button>` : ""}</td><td class="pts">${r.pts}</td></tr>`).join("")
         || `<tr><td></td><td class="nm">No players yet</td></tr>`}</tbody></table></div></div>`;
   }
 
   function render() {
-    if (showBoard || state.phase === "scores") { app.innerHTML = boardHTML(); lastKey = "board"; return; }
+    if (showBoard || state.phase === "scores") { app.innerHTML = boardHTML(lastKey === "board"); lastKey = "board"; return; }
     const key = state.phase + ":" + state.q;
     const fresh = key !== lastKey;
     lastKey = key;

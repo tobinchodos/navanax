@@ -29,7 +29,7 @@ export async function sha256(text) {
 
 export const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export const hasReveal = (Q) => !!Q && (Q.answer !== undefined || !!Q.reveal);
+export const hasReveal = (Q) => !!Q && (Q.answer !== undefined || !!Q.reveal || !!Q.accept || !!Q.judged);
 
 // Reads numbers the way people type them: "81", "2,400", "3.5 million", "2.4e18", "5 x 10^12", "20!".
 const WORDS = { k: 1e3, thousand: 1e3, m: 1e6, mil: 1e6, million: 1e6, b: 1e9, bn: 1e9, billion: 1e9, t: 1e12, trillion: 1e12, quadrillion: 1e15, quintillion: 1e18, sextillion: 1e21, septillion: 1e24, octillion: 1e27, nonillion: 1e30, decillion: 1e33 };
@@ -64,4 +64,47 @@ export function seatsSVG() {
   return `<svg class="seats" viewBox="0 0 588 180" role="img" aria-label="A long table with 20 seats, ten on each side">
     <rect x="28" y="54" width="532" height="72" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>
     <g fill="none" stroke="currentColor" stroke-width="2">${seats.join("")}</g></svg>`;
+}
+
+// ---------- scoring ----------
+export const isScored = (Q) => !!Q && (Q.answer !== undefined || !!Q.accept || !!Q.judged);
+
+// Who got question i right: closest guess(es) for numbers, any accepted word for text.
+// Judged questions start with nobody. Host clicks (state.marks["q"+i][uid] = true/false) win.
+export function correctSet(Q, i, answers, marks) {
+  const out = new Set();
+  const a = (answers && answers[i]) || {};
+  if (Q.type === "number" && Q.answer !== undefined) {
+    const log = Q.scale === "log";
+    const tx = (v) => (log ? (v > 0 ? Math.log10(v) : NaN) : v);
+    const target = tx(Q.answer);
+    const d = Object.entries(a).map(([id, r]) => [id, Math.abs(tx(parseNum(r.text)) - target)]).filter(([, x]) => isFinite(x));
+    if (d.length) { const best = Math.min(...d.map(([, x]) => x)); for (const [id, x] of d) if (x - best < 1e-9) out.add(id); }
+  } else if (Q.accept) {
+    for (const [id, r] of Object.entries(a)) {
+      const t = String(r.text).toLowerCase();
+      if (Q.accept.some((w) => t.includes(w.toLowerCase()))) out.add(id);
+    }
+  }
+  const m = (marks && marks["q" + i]) || {};
+  for (const [id, v] of Object.entries(m)) { if (v === true && a[id]) out.add(id); if (v === false) out.delete(id); }
+  return out;
+}
+
+// How many questions have been revealed so far (only those count).
+export function revealedCount(state, QUESTIONS) {
+  if (state.phase === "scores" || state.phase === "end") return QUESTIONS.length;
+  if (state.phase === "reveal") return state.q + 1;
+  if (state.phase === "question") return state.q;
+  return 0;
+}
+
+// [{ id, name, pts, marks: [true|false|null per question] }], best first.
+export function scoreboard(QUESTIONS, state, players, answers) {
+  const upto = revealedCount(state, QUESTIONS);
+  const sets = QUESTIONS.map((Q, i) => (i < upto && isScored(Q) ? correctSet(Q, i, answers, state.marks) : null));
+  return Object.entries(players).map(([id, p]) => {
+    const marks = QUESTIONS.map((Q, i) => (sets[i] ? sets[i].has(id) : null));
+    return { id, name: p.name, t: p.t || 0, marks, pts: marks.filter((x) => x === true).length };
+  }).sort((x, y) => y.pts - x.pts || x.t - y.t);
 }

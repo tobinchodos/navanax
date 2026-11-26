@@ -21,7 +21,7 @@
 </div>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("app"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, ref, onValue, set, get, update } from "./common.js?v=4";
+import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, ref, onValue, set, get, update } from "./common.js?v=4";
 const app = document.getElementById("app");
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -34,21 +34,23 @@ if (!configured) {
   if (!cfg) await set(ref(db, "config/hostUid"), uid);
   const isHost = !cfg || cfg === uid;   // other browsers can mirror the screen, without controls
 
-  let state = { phase: "login", q: 0 }, players = {}, answers = {}, attempts = {}, lastKey = "";
+  let state = { phase: "login", q: 0 }, players = {}, answers = {}, attempts = {}, lastKey = "", showBoard = false;
 
-  // login → each question (→ its reveal, if it has one) → end
+  // login → each question (→ its reveal, if it has one) → scores → end
   const setState = (p) => isHost && set(ref(db, "state"), { ...state, ...p });
   const enter = (q) => setState({ phase: "question", q });
   function next() {
     const Q = QUESTIONS[state.q];
     if (state.phase === "login") enter(0);
     else if (state.phase === "question" && hasReveal(Q)) setState({ phase: "reveal" });
-    else if (state.phase === "question" || state.phase === "reveal") state.q + 1 < QUESTIONS.length ? enter(state.q + 1) : setState({ phase: "end" });
+    else if (state.phase === "question" || state.phase === "reveal") state.q + 1 < QUESTIONS.length ? enter(state.q + 1) : setState({ phase: "scores" });
+    else if (state.phase === "scores") setState({ phase: "end" });
   }
   function prev() {
     const last = QUESTIONS.length - 1;
     const back = (q) => setState({ phase: hasReveal(QUESTIONS[q]) ? "reveal" : "question", q });
-    if (state.phase === "end") back(last);
+    if (state.phase === "end") setState({ phase: "scores" });
+    else if (state.phase === "scores") back(last);
     else if (state.phase === "reveal") setState({ phase: "question" });
     else if (state.phase === "question") state.q > 0 ? back(state.q - 1) : setState({ phase: "login" });
   }
@@ -68,8 +70,21 @@ if (!configured) {
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); next(); }
       else if (e.key === "ArrowLeft" || e.key === "PageUp") prev();
       else if (e.key === "f") document.documentElement.requestFullscreen?.().catch(() => {});
+      else if (e.key === "s") { showBoard = !showBoard; lastKey = ""; render(); }
     });
   }
+
+  // On a reveal screen, clicking an answer flips it between right and wrong.
+  app.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-id]");
+    const Q = QUESTIONS[state.q];
+    if (!isHost || !el || state.phase !== "reveal" || !isScored(Q)) return;
+    const id = el.dataset.id, k = "q" + state.q;
+    const now = correctSet(Q, state.q, answers, state.marks).has(id);
+    const marks = { ...(state.marks || {}) };
+    marks[k] = { ...(marks[k] || {}), [id]: !now };
+    setState({ marks });
+  });
 
   function qr(size) {
     const el = document.getElementById("qr");
@@ -81,7 +96,7 @@ if (!configured) {
   const nameOf = (id) => players[id]?.name || "Guest";
 
   // Histogram of numeric guesses. Log questions bin by power of ten.
-  function histogram(Q, list, reveal) {
+  function histogram(Q, list, reveal, wins) {
     const log = Q.scale === "log";
     const tx = (v) => (log ? (v > 0 ? Math.log10(v) : NaN) : v);
     const pts = list.map((r) => ({ ...r, v: parseNum(r.text) })).map((r) => ({ ...r, x: tx(r.v) })).filter((r) => isFinite(r.x));
@@ -105,21 +120,19 @@ if (!configured) {
     };
     const every = n > 24 ? Math.ceil(n / 12) : 1;
     let closest = "";
-    if (reveal && pts.length && isFinite(ans)) {
-      const best = Math.min(...pts.map((r) => Math.abs(r.x - ans)));
-      const winners = pts.filter((r) => Math.abs(r.x - ans) === best);
-      closest = `<div class="closest">Closest: ${winners.map((w) => `<b>${esc(nameOf(w.id))}</b> (${esc(fmtNum(w.v))})`).join(", ")}</div>`;
-    }
+    const winners = pts.filter((r) => wins.has(r.id));
+    if (reveal && winners.length) closest = `<div class="closest">Point to ${winners.map((w) => `<b>${esc(nameOf(w.id))}</b> (${esc(fmtNum(w.v))})`).join(", ")}</div>`;
     return `<div class="hist"><div class="cols" style="--max:${max}">${cols.map((c, i) => `
-      <div class="col ${i === hit ? "hit" : ""}">${c.map((r) => `<div class="blk" title="${esc(r.text)}">${esc(nameOf(r.id))}</div>`).join("")}
+      <div class="col ${i === hit ? "hit" : ""}">${c.map((r) => `<div class="blk ${wins.has(r.id) ? "win" : ""}" data-id="${esc(r.id)}" title="${esc(r.text)}">${esc(nameOf(r.id))}</div>`).join("")}
       ${i === hit ? `<div class="flag"><span>${esc(Q.answerLabel || fmtNum(Q.answer))}</span></div>` : ""}</div>`).join("")}</div>
       <div class="xs">${cols.map((_, i) => `<div>${i % every === 0 ? lab(i) : ""}</div>`).join("")}</div></div>${closest}`;
   }
 
   // Text answers: update cards in place so only new or changed ones animate.
-  function fillWall(list) {
+  function fillWall(list, wins) {
     const wall = document.getElementById("wall");
     if (!wall) return;
+    if (wins) wall.classList.add("judging");
     if (!list.length) { wall.innerHTML = `<div class="empty">Answers will appear here.</div>`; return; }
     wall.querySelector(".empty")?.remove();
     const have = new Map([...wall.querySelectorAll(".card")].map((c) => [c.dataset.id, c]));
@@ -136,9 +149,22 @@ if (!configured) {
       wall.append(c);
     }
     for (const c of have.values()) c.remove();
+    if (wins) for (const c of wall.querySelectorAll(".card")) c.classList.toggle("ok", wins.has(c.dataset.id));
+  }
+
+  function boardHTML() {
+    const rows = scoreboard(QUESTIONS, state, players, answers);
+    const cols = QUESTIONS.map((Q, i) => (isScored(Q) ? i : -1)).filter((i) => i >= 0);
+    return `<div class="stage" style="grid-template-rows:auto minmax(0,1fr)">
+      <div class="top"><div><div class="label">Navanax</div><h1>Scoreboard</h1></div></div>
+      <div class="board-wrap"><table class="board"><thead><tr><th></th><th></th>${cols.map((i) => `<th>${i + 1}</th>`).join("")}<th>Total</th></tr></thead>
+      <tbody>${rows.map((r, n) => `<tr style="animation-delay:${n * 70}ms"><td class="rk">${n === 0 || r.pts !== rows[n - 1].pts ? n + 1 : ""}</td><td class="nm">${esc(r.name)}</td>
+        ${cols.map((i) => `<td class="mk">${r.marks[i] === true ? "✓" : r.marks[i] === false ? "·" : ""}</td>`).join("")}<td class="pts">${r.pts}</td></tr>`).join("")
+        || `<tr><td></td><td class="nm">No players yet</td></tr>`}</tbody></table></div></div>`;
   }
 
   function render() {
+    if (showBoard || state.phase === "scores") { app.innerHTML = boardHTML(); lastKey = "board"; return; }
     const key = state.phase + ":" + state.q;
     const fresh = key !== lastKey;
     lastKey = key;
@@ -176,8 +202,9 @@ if (!configured) {
         let body;
         if (reveal && Q.reveal) {
           const R = Q.reveal;
-          body = `<div class="reveal ${R.image ? "" : "solo"}">${R.image ? `<img src="${esc(R.image)}" alt="">` : ""}
-            <div><div class="big">${esc(R.text || "")}</div>${R.caption ? `<div class="cap">${esc(R.caption)}</div>` : ""}</div></div>`;
+          body = `<div class="revealwrap"><div class="reveal ${R.image ? "" : "solo"}">${R.image ? `<img src="${esc(R.image)}" alt="">` : ""}
+            <div><div class="big">${esc(R.text || "")}</div>${R.caption ? `<div class="cap">${esc(R.caption)}</div>` : ""}</div></div>
+            <div class="wall answers mini" id="wall"></div></div>`;
         } else if (num) {
           body = extra ? `<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><div style="align-self:center">${extra}</div><div class="histbox" id="hist"></div></div>` : `<div class="histbox" id="hist"></div>`;
         } else {
@@ -193,8 +220,9 @@ if (!configured) {
       document.getElementById("n").textContent = list.length;
       document.getElementById("tot").textContent = Object.keys(players).length;
       const hist = document.getElementById("hist");
-      if (hist) hist.innerHTML = histogram(Q, list, reveal);
-      fillWall(list);
+      const wins = reveal && isScored(Q) ? correctSet(Q, state.q, answers, state.marks) : null;
+      if (hist) hist.innerHTML = histogram(Q, list, reveal, wins || new Set());
+      fillWall(list, wins);
       return;
     }
 

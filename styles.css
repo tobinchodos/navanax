@@ -83,7 +83,7 @@ button { cursor: pointer; }
 .cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: clamp(4px, .6vw, 10px); align-items: end; min-height: 0; border-bottom: 1px solid var(--ink); }
 .col { height: 100%; display: flex; flex-direction: column-reverse; gap: 3px; position: relative; padding-bottom: 3px; }
 .blk { flex: 0 0 calc((100% - 3px * var(--max)) / var(--max)); max-height: 44px; min-height: 6px; border: 1px solid var(--ink); display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: clamp(11px, .9vw, 15px); white-space: nowrap; padding: 0 4px; animation: pop .3s ease-out both; }
-.col.hit .blk { background: var(--ink); color: var(--bg); }
+
 .col .flag { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed var(--ink); }
 .col .flag span { position: absolute; top: 0; left: 8px; white-space: nowrap; font-size: clamp(16px, 1.5vw, 26px); background: var(--bg); padding: 0 6px; }
 .xs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: clamp(4px, .6vw, 10px); color: var(--dim); font-size: clamp(11px, .95vw, 15px); padding-top: 8px; text-align: center; font-variant-numeric: tabular-nums; }
@@ -94,3 +94,31 @@ button { cursor: pointer; }
 @media (max-width: 760px) { .split, .reveal { grid-template-columns: minmax(0, 1fr); } .bottom { flex-direction: column; align-items: flex-start; } .join { margin-left: 0; } }
 @media (prefers-reduced-motion: reduce) { .card, .blk, .shake { animation: none; } }
 .histbox { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 14px; min-height: 0; }
+
+/* reveal: answers below the reveal, winners filled white; host clicks to flip */
+.revealwrap { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: clamp(14px, 2vh, 24px); min-height: 0; }
+.revealwrap .reveal img { max-height: 46vh; }
+.wall.mini { mask-image: none; max-height: 22vh; }
+.wall.mini .card { flex: 0 1 auto; }
+.wall.mini .card .gs { font-size: clamp(15px, 1.3vw, 22px); }
+.judging .card, .blk { cursor: pointer; }
+.blk.win { background: var(--ink); color: var(--bg); }
+
+/* scoreboard */
+.board-wrap { overflow: auto; min-height: 0; }
+.board { border-collapse: collapse; width: 100%; max-width: 1100px; font-size: clamp(18px, 2vw, 32px); font-variant-numeric: tabular-nums; }
+.board th { color: var(--dim); font-weight: 400; font-size: .55em; text-align: center; padding: 0 8px 10px; border-bottom: 1px solid var(--ink); }
+.board th:last-child { text-align: right; }
+.board td { padding: clamp(6px, 1vh, 12px) 8px; border-bottom: 1px solid var(--line); }
+.board tr { animation: pop .4s ease-out both; }
+.board .rk { color: var(--dim); width: 2.2em; }
+.board .nm { width: 100%; }
+.board .mk { text-align: center; min-width: 2.2em; }
+.board .pts { text-align: right; font-weight: 600; }
+.board tbody tr:first-child td { border-bottom-color: var(--ink); }
+.revealwrap .reveal { min-height: 0; height: 100%; grid-template-rows: minmax(0, 1fr); }
+.revealwrap .reveal img { height: 100%; max-height: 100%; }
+.split .wall.answers .card { flex: 1 1 200px; padding: 8px 14px; }
+.split .wall.answers .card .gs { font-size: clamp(16px, 1.4vw, 24px); }
+.board { font-size: clamp(16px, min(2vw, 3.2vh), 32px); }
+.board td { padding: .5vh 8px; }

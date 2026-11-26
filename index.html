@@ -17,7 +17,7 @@
 </main>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<p class="center">Can't connect.<br><small>${m.replace(/</g, "&lt;")}</small></p>`; });
-import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, ref, onValue, set, push } from "./common.js?v=4";
+import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, scoreboard, ref, onValue, set, push } from "./common.js?v=4";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -78,7 +78,12 @@ if (!configured) {
       };
       return;
     }
-    if (state.phase === "end") { view.innerHTML = `<div class="center"><h1>Thank you.</h1></div>`; return; }
+    if (state.phase === "scores" || state.phase === "end") {
+      const rows = scoreboard(QUESTIONS, state, players, answers);
+      const i = rows.findIndex((r) => r.id === uid), pts = rows[i]?.pts ?? 0;
+      view.innerHTML = `<div class="center"><div class="label">Your score</div><h1 style="font-size:72px">${pts}</h1><p>${i + 1} of ${rows.length}</p><h2>Thank you.</h2></div>`;
+      return;
+    }
     view.innerHTML = `<div class="center"><h1>You're in.</h1><p>Questions will appear here.</p></div>`;
   }
 

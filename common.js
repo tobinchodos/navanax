@@ -28,3 +28,40 @@ export async function sha256(text) {
 }
 
 export const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+export const hasReveal = (Q) => !!Q && (Q.answer !== undefined || !!Q.reveal);
+
+// Reads numbers the way people type them: "81", "2,400", "3.5 million", "2.4e18", "5 x 10^12", "20!".
+const WORDS = { k: 1e3, thousand: 1e3, m: 1e6, mil: 1e6, million: 1e6, b: 1e9, bn: 1e9, billion: 1e9, t: 1e12, trillion: 1e12, quadrillion: 1e15, quintillion: 1e18, sextillion: 1e21, septillion: 1e24, octillion: 1e27, nonillion: 1e30, decillion: 1e33 };
+export function parseNum(input) {
+  const s = String(input).toLowerCase().replace(/,/g, "").replace(/\s+/g, " ").trim();
+  let m;
+  if ((m = s.match(/^(\d+) ?!$/))) { const n = +m[1]; if (n > 170) return Infinity; let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; }
+  if ((m = s.match(/^(\d*\.?\d+) ?(?:x|\*|×) ?10 ?\^ ?(-?\d+)$/))) return +m[1] * 10 ** +m[2];
+  if ((m = s.match(/^(\d*\.?\d+) ?\^ ?(\d+)$/))) return (+m[1]) ** +m[2];
+  if ((m = s.match(/^(\d*\.?\d+(?:e\+?\d+)?) ?([a-z]+)?$/))) {
+    if (!m[2]) return +m[1];
+    return WORDS[m[2]] ? +m[1] * WORDS[m[2]] : NaN;
+  }
+  return NaN;
+}
+const NAMES = [[1e33, "decillion"], [1e30, "nonillion"], [1e27, "octillion"], [1e24, "septillion"], [1e21, "sextillion"], [1e18, "quintillion"], [1e15, "quadrillion"], [1e12, "trillion"], [1e9, "billion"], [1e6, "million"]];
+export function fmtNum(v) {
+  if (Number.isNaN(v)) return "?";
+  if (!isFinite(v)) return "∞";
+  if (Math.abs(v) < 1e6) return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  for (const [n, w] of NAMES) if (Math.abs(v) >= n) return v / n >= 1000 ? v.toExponential(2) : `${+(v / n).toPrecision(3)} ${w}`;
+  return v.toExponential(2);
+}
+
+// A long table with ten seats down each side.
+export function seatsSVG() {
+  const seats = [];
+  for (let i = 0; i < 10; i++) {
+    const x = 60 + i * 52;
+    seats.push(`<circle cx="${x}" cy="26" r="15"/><circle cx="${x}" cy="154" r="15"/>`);
+  }
+  return `<svg class="seats" viewBox="0 0 588 180" role="img" aria-label="A long table with 20 seats, ten on each side">
+    <rect x="28" y="54" width="532" height="72" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>
+    <g fill="none" stroke="currentColor" stroke-width="2">${seats.join("")}</g></svg>`;
+}

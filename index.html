@@ -3,89 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#4a0d1f">
-<title>Thanksgiving</title>
+<meta name="theme-color" content="#000000">
+<title>Navanax</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <main class="phone">
-  <header><b>Thanksgiving</b><span id="me"></span></header>
+  <header><span class="mark">Navanax</span><span id="me"></span></header>
   <section class="view" id="view"><p class="center">Loading…</p></section>
 </main>
 <script type="module">
-addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the quiz database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, ref, onValue, set, push } from "./common.js?v=3";
+addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<p class="center">Can't connect.<br><small>${m.replace(/</g, "&lt;")}</small></p>`; });
+import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, ref, onValue, set, push } from "./common.js?v=4";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");
-const LOCK = `<svg class="lock" viewBox="0 0 84 84" aria-hidden="true"><rect x="14" y="36" width="56" height="42" rx="10" fill="#f4b740"/><path d="M26 36V26a16 16 0 0 1 32 0v10" fill="none" stroke="#f4b740" stroke-width="8"/><circle cx="42" cy="54" r="6" fill="#4a0d1f"/><rect x="39" y="56" width="6" height="12" rx="3" fill="#4a0d1f"/></svg>`;
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 
 if (!configured) {
-  view.innerHTML = `<p class="center">Not open yet. Check back soon.</p>`;
+  view.innerHTML = `<p class="center">Not open yet.</p>`;
 } else {
   const { db, uid } = await connect();
   let state = null, players = {}, answers = {}, unlocked = store.get("unlocked") === "1";
-  let busy = false;   // true while the guest is typing, so live updates don't wipe their input
+  let shown = "", busy = false;    // true while typing, so live updates don't wipe the input
   let editing = false;
 
-  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "login", q: 0 }; editing = false; render(); });
-  onValue(ref(db, "players"), (s) => { players = s.val() || {}; render(); });
-  onValue(ref(db, "answers"), (s) => { answers = s.val() || {}; render(); });
 
-  let shown = "";
   function render() {
     if (!state) return;
     const me = players[uid];
     meEl.textContent = me ? me.name : "";
     const Q = QUESTIONS[state.q];
     const mine = answers[state.q]?.[uid]?.text;
-    const key = !unlocked && !me ? "login" : !me ? "name" : state.phase === "question" && Q ? (mine && !editing ? "sent" : "answer") + state.q : state.phase;
-    if (key === shown && busy) return;   // don't redraw under someone's thumbs
-    if (key === shown && key.startsWith("answer")) return;
+    const live = (state.phase === "question" || state.phase === "reveal") && Q;
+    const key = !unlocked && !me ? "login" : !me ? "name"
+      : live ? `${state.phase}${state.q}:${state.phase === "question" && (!mine || editing) ? "form" : "sent"}` : state.phase;
+    if (key === shown && (busy || key.endsWith("form"))) return;
     shown = key;
     busy = false;
 
     if (key === "login") return loginView();
     if (key === "name") return nameView();
-    if (state.phase === "question" && Q) {
-      if (mine && !editing) {
-        view.innerHTML = `<p style="color:var(--gold);font-weight:700;margin-bottom:8px">Question ${state.q + 1}</p><h2>${esc(Q)}</h2>
-          <div class="sent"><small>Your answer is on the screen</small>${esc(mine)}</div>
-          <button class="ghost" id="edit">Change my answer</button>`;
-        document.getElementById("edit").onclick = () => { editing = true; render(); };
+    if (live) {
+      const head = `<div class="label">${state.q + 1} / ${QUESTIONS.length}</div><h2>${esc(Q.q)}</h2>`
+        + (Q.figure === "seats" ? seatsSVG() : "")
+        + (Q.quote ? `<blockquote>${esc(Q.quote.text)}<cite>${esc(Q.quote.cite)}</cite></blockquote>` : "");
+      if (key.endsWith("sent")) {
+        view.innerHTML = head + (mine ? `<div class="sent">${esc(mine)}</div>` : "")
+          + (state.phase === "question" ? `<button class="ghost" id="edit">Change answer</button>` : `<p>Answers are closed. Look up.</p>`);
+        const b = document.getElementById("edit");
+        if (b) b.onclick = () => { editing = true; render(); };
         return;
       }
-      view.innerHTML = `<p style="color:var(--gold);font-weight:700;margin-bottom:8px">Question ${state.q + 1}</p><h2>${esc(Q)}</h2>
-        <form class="field" id="f"><textarea id="a" maxlength="280" placeholder="Type your answer">${esc(mine || "")}</textarea>
-        <p class="err" id="err"></p><button class="primary" id="go">Send</button></form>`;
-      const f = document.getElementById("f"), a = document.getElementById("a");
-      a.oninput = () => { busy = true; };
+      const num = Q.type === "number";
+      view.innerHTML = head + `<form class="field" id="f">`
+        + (num ? `<input id="a" ${Q.scale === "log" ? 'inputmode="text"' : 'inputmode="decimal"'} autocomplete="off" placeholder="${Q.scale === "log" ? "e.g. 3 million, 4e12" : "Number"}" value="${esc(mine || "")}">`
+               : `<textarea id="a" maxlength="280" placeholder="Your answer">${esc(mine || "")}</textarea>`)
+        + `<p class="${num ? "preview" : "err"}" id="msg"></p><button class="primary" id="go">Send</button></form>`;
+      const f = document.getElementById("f"), a = document.getElementById("a"), msg = document.getElementById("msg");
+      a.oninput = () => {
+        busy = true;
+        if (num && Q.scale === "log") { const v = parseNum(a.value); msg.textContent = a.value.trim() && isFinite(v) ? "= " + fmtNum(v) : ""; }
+      };
       f.onsubmit = async (e) => {
         e.preventDefault();
         const text = a.value.trim().slice(0, 280);
         if (!text) return;
+        if (num && !isFinite(parseNum(text))) { msg.textContent = "Enter a number."; return; }
         document.getElementById("go").disabled = true;
         try { await set(ref(db, `answers/${state.q}/${uid}`), { text, t: Date.now() }); editing = false; busy = false; shown = ""; render(); }
-        catch { document.getElementById("err").textContent = "That didn't go through. The question may be closed."; document.getElementById("go").disabled = false; }
+        catch { msg.textContent = "Didn't go through. Answers may be closed."; document.getElementById("go").disabled = false; }
       };
       return;
     }
-    if (state.phase === "end") {
-      view.innerHTML = `<div class="center"><h1>Happy Thanksgiving, ${esc(me.name)}.</h1><p>Thanks for playing.</p></div>`;
-      return;
-    }
-    view.innerHTML = `<div class="center">${LOCK}<h1>You're in, ${esc(me.name)}.</h1><p>Watch the big screen. Questions show up here when they start.</p></div>`;
+    if (state.phase === "end") { view.innerHTML = `<div class="center"><h1>Thank you.</h1></div>`; return; }
+    view.innerHTML = `<div class="center"><h1>You're in.</h1><p>Questions will appear here.</p></div>`;
   }
 
   function loginView() {
     let tries = 0;
-    view.innerHTML = `<div class="center">${LOCK}<h1>Log in</h1>
-      <div class="hint"><small>Hint</small>${esc(HINT)}</div>
+    view.innerHTML = `<div class="center"><h1>Log in</h1>
+      <div class="label">Hint</div><div class="hint">${esc(HINT)}</div>
       <form class="field" id="f"><input id="pw" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Password">
-      <p class="err" id="err"></p><button class="primary" id="go">Log in</button></form></div>`;
+      <p class="err" id="err"></p><button class="primary">Log in</button></form></div>`;
     const f = document.getElementById("f"), pw = document.getElementById("pw"), err = document.getElementById("err");
     pw.oninput = () => { busy = true; };
     f.onsubmit = async (e) => {
@@ -96,15 +98,15 @@ if (!configured) {
       push(ref(db, "attempts"), { uid, guess: ok ? "" : guess, ok, t: Date.now() }).catch(() => {});
       if (ok) { unlocked = true; store.set("unlocked", "1"); busy = false; shown = ""; render(); return; }
       tries++;
-      err.textContent = tries > 1 ? `Wrong password (${tries} tries)` : "Wrong password";
+      err.textContent = tries > 1 ? `Wrong (${tries})` : "Wrong";
       f.classList.remove("shake"); void f.offsetWidth; f.classList.add("shake");
       pw.value = ""; pw.focus();
     };
   }
 
   function nameView() {
-    view.innerHTML = `<div class="center"><h1>You got in.</h1><p>What should we call you? Your name shows up next to your answers.</p>
-      <form class="field" id="f"><input id="name" maxlength="24" autocomplete="given-name" placeholder="Your name">
+    view.innerHTML = `<div class="center"><h1>Your name</h1><p>Shown next to your answers.</p>
+      <form class="field" id="f"><input id="name" maxlength="24" autocomplete="given-name" placeholder="Name">
       <p class="err" id="err"></p><button class="primary" id="go">Continue</button></form></div>`;
     const f = document.getElementById("f"), inp = document.getElementById("name");
     inp.oninput = () => { busy = true; };
@@ -114,9 +116,13 @@ if (!configured) {
       if (!name) return;
       document.getElementById("go").disabled = true;
       try { await set(ref(db, `players/${uid}`), { name, t: Date.now() }); busy = false; shown = ""; render(); }
-      catch { document.getElementById("err").textContent = "Couldn't save that. Try again."; document.getElementById("go").disabled = false; }
+      catch { document.getElementById("err").textContent = "Couldn't save. Try again."; document.getElementById("go").disabled = false; }
     };
   }
+  // Subscribe last, so everything render() uses already exists.
+  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "login", q: 0 }; editing = false; render(); });
+  onValue(ref(db, "players"), (s) => { players = s.val() || {}; render(); });
+  onValue(ref(db, "answers"), (s) => { answers = s.val() || {}; render(); });
 }
 </script>
 </body>

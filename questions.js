@@ -56,14 +56,6 @@ export const QUESTIONS = [
     answer: 2432902008176640000,
     answerLabel: "20! = 2,432,902,008,176,640,000",
   },
-  {
-    type: "text",
-    q: "What do you think of this?",
-    judged: true,
-    quote: {
-      text: "The holidays are part and parcel of the gross fraud, wrong, and inhumanity of slavery. … Their object seems to be, to disgust their slaves with freedom, by plunging them into the lowest depths of dissipation. … So, when the holidays ended, we staggered up from the filth of our wallowing, took a long breath, and marched to the field,—feeling, upon the whole, rather glad to go, from what our master had deceived us into a belief was freedom, back to the arms of slavery.",
-      cite: "Frederick Douglass, Narrative of the Life of Frederick Douglass, an American Slave (1845)",
-    },
   },
   {
     type: "number",
@@ -125,6 +117,14 @@ export const QUESTIONS = [
     accept: ["recursive", "self-improvement", "self improvement"],
     reveal: { text: "Recursive Self-Improvement" },
   },
+  {
+    type: "text",
+    q: "What do you think of this?",
+    judged: true,
+    quote: {
+      text: "The holidays are part and parcel of the gross fraud, wrong, and inhumanity of slavery. … Their object seems to be, to disgust their slaves with freedom, by plunging them into the lowest depths of dissipation. … So, when the holidays ended, we staggered up from the filth of our wallowing, took a long breath, and marched to the field,—feeling, upon the whole, rather glad to go, from what our master had deceived us into a belief was freedom, back to the arms of slavery.",
+      cite: "Frederick Douglass, Narrative of the Life of Frederick Douglass, an American Slave (1845)",
+    },
   {
     type: "text",
     q: "Two years ago, instead of saying what we were grateful for, we all shared the worst pain we’d ever felt. Can you remember a single thing anyone said that day?",

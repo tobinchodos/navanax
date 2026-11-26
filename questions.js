@@ -43,6 +43,13 @@ export const QUESTIONS = [
     judged: true,
   },
   {
+    type: "text",
+    q: "Whose hand is this?",
+    image: "hand.jpg",
+    accept: ["bush"],
+    reveal: { image: "bush.jpg", text: "George H. W. Bush", caption: "Hand: Bush gives troops a thumbs-up, Dec 31, 1992 (U.S. National Archives). Portrait: official, 1989. Both public domain." },
+  },
+  {
     type: "number",
     q: "How old is Danny Chodos?",
     answer: 81,
@@ -52,6 +59,17 @@ export const QUESTIONS = [
     q: "What is Breghan’s boyfriend’s name?",
     accept: ["devin"],
     reveal: { text: "Devin #2" },
+  },
+  {
+    type: "text",
+    q: "Whose hand is this?",
+    image: "jordan-hand.jpg",
+    accept: ["jordan"],
+    reveal: {
+      image: "jordan.jpg",
+      text: "Michael Jordan",
+      caption: "Photo: Steve Lipofsky, Basketballphoto.com, CC BY-SA 3.0 (cropped for the question).",
+    },
   },
   {
     type: "number",
@@ -77,41 +95,12 @@ export const QUESTIONS = [
   {
     type: "text",
     q: "Whose hand is this?",
-    image: "hand.jpg",
-    accept: ["bush"],
-    reveal: { image: "bush.jpg", text: "George H. W. Bush", caption: "Hand: Bush gives troops a thumbs-up, Dec 31, 1992 (U.S. National Archives). Portrait: official, 1989. Both public domain." },
-  },
-  {
-    type: "text",
-    q: "Whose hand is this?",
-    image: "jordan-hand.jpg",
-    accept: ["jordan"],
-    reveal: {
-      image: "jordan.jpg",
-      text: "Michael Jordan",
-      caption: "Photo: Steve Lipofsky, Basketballphoto.com, CC BY-SA 3.0 (cropped for the question).",
-    },
-  },
-  {
-    type: "text",
-    q: "Whose hand is this?",
     image: "holmes-hand.jpg",
     accept: ["holmes"],
     reveal: {
       image: "holmes.jpg",
       text: "Elizabeth Holmes",
       caption: "TechCrunch Disrupt, Sept 8, 2014. Photo: TechCrunch, CC BY 2.0 (cropped for the question).",
-    },
-  },
-  {
-    type: "text",
-    q: "Whose hand is this?",
-    image: "bigbird-hand.jpg",
-    accept: ["big bird", "bigbird"],
-    reveal: {
-      image: "bigbird.jpg",
-      text: "Big Bird",
-      caption: "Photo: Tony Alter, CC BY 2.0 (cropped for the question).",
     },
   },
   {
@@ -124,6 +113,17 @@ export const QUESTIONS = [
     type: "text",
     q: "What is one thing your own side of the political spectrum got wrong recently?",
     judged: true,
+  },
+  {
+    type: "text",
+    q: "Whose hand is this?",
+    image: "bigbird-hand.jpg",
+    accept: ["big bird", "bigbird"],
+    reveal: {
+      image: "bigbird.jpg",
+      text: "Big Bird",
+      caption: "Photo: Tony Alter, CC BY 2.0 (cropped for the question).",
+    },
   },
   {
     type: "number",

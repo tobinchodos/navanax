@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
 <main class="phone">
@@ -50,7 +50,7 @@ if (!configured) {
     if (live) {
       const head = `<div class="label">${state.q + 1} / ${QUESTIONS.length}</div><h2>${esc(Q.q)}</h2>`
         + (Q.note ? `<p>${esc(Q.note)}</p>` : "")
-        + (Q.image ? `<img class="qimg" src="${esc(Q.image)}" alt="" onerror="this.remove()">` : "")
+        + (Q.image ? `<img class="qimg ${Q.color ? "color" : ""}" src="${esc(Q.image)}" alt="" onerror="this.remove()">` : "")
         + (Q.figure === "seats" ? seatsSVG() : "")
         + (Q.quote ? `<blockquote>${esc(Q.quote.text)}<cite>${esc(Q.quote.cite)}</cite></blockquote>` : "");
       if (key.endsWith("sent")) {

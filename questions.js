@@ -19,7 +19,7 @@ export const RULES = [
 //   figure:  a drawing shown with the question ("seats")
 //   quote:   a quotation shown with the question
 //   accept:  for text questions, words that count as correct (case-insensitive). Number questions: closest guess wins.
-//   image:   a picture shown with the question
+//   image:   a picture shown with the question (black and white unless color: true)
 //   note:    a smaller line under the question
 //   range:   [min, max] for number questions on a fixed scale (e.g. 0–10)
 //   whole:   number questions that only take whole numbers, 0 or more
@@ -149,6 +149,17 @@ export const QUESTIONS = [
   },
   {
     type: "text",
+    q: "Whose hand is this?",
+    image: "picard-hand.jpg",
+    accept: ["picard", "patrick stewart", "stewart"],
+    reveal: {
+      image: "picard.jpg",
+      text: "Jean-Luc Picard",
+      caption: "Patrick Stewart at San Diego Comic-Con, 2019. Photo: Gage Skidmore, CC BY-SA 2.0 (cropped for the question).",
+    },
+  },
+  {
+    type: "text",
     q: "What does the acronym AGI stand for?",
     accept: ["general intelligence"],
     reveal: { text: "Artificial General Intelligence" },
@@ -164,6 +175,18 @@ export const QUESTIONS = [
     q: "Give your best example of internet slang.",
     note: "Include a definition.",
     judged: true,
+  },
+  {
+    type: "text",
+    q: "Whose hand is this?",
+    image: "trump-hand.jpg",
+    color: true,
+    accept: ["trump"],
+    reveal: {
+      image: "trump.jpg",
+      text: "Donald Trump",
+      caption: "Hand: Sparrows Point, Maryland, Oct 6, 2026. Portrait: official, 2025. Both official White House photos, public domain.",
+    },
   },
   {
     type: "text",

@@ -16,6 +16,7 @@
   <section class="view" id="view"><p class="center">Loading…</p></section>
 </main>
 <script type="module">
+addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the quiz database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
 import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, ref, onValue, set, push } from "./common.js";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");

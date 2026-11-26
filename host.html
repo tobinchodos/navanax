@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -22,7 +22,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("app");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("app"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=7";
+import { configured, connect, QUESTIONS, HINT, RULES, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=8";
 const app = document.getElementById("app");
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -37,12 +37,13 @@ if (!configured) {
 
   let state = { phase: "login", q: 0 }, players = {}, answers = {}, attempts = {}, lastKey = "", showBoard = false;
 
-  // login → each question (→ its reveal, if it has one) → scores → end
+  // login → rules → each question (→ its reveal, if it has one) → scores → end
   const setState = (p) => isHost && set(ref(db, "state"), { ...state, ...p });
   const enter = (q) => setState({ phase: "question", q });
   function next() {
     const Q = QUESTIONS[state.q];
-    if (state.phase === "login") enter(0);
+    if (state.phase === "login") setState({ phase: "rules" });
+    else if (state.phase === "rules") enter(0);
     else if (state.phase === "question" && hasReveal(Q)) setState({ phase: "reveal" });
     else if (state.phase === "question" || state.phase === "reveal") state.q + 1 < QUESTIONS.length ? enter(state.q + 1) : setState({ phase: "scores" });
     else if (state.phase === "scores") setState({ phase: "end" });
@@ -53,7 +54,8 @@ if (!configured) {
     if (state.phase === "end") setState({ phase: "scores" });
     else if (state.phase === "scores") back(last);
     else if (state.phase === "reveal") setState({ phase: "question" });
-    else if (state.phase === "question") state.q > 0 ? back(state.q - 1) : setState({ phase: "login" });
+    else if (state.phase === "question") state.q > 0 ? back(state.q - 1) : setState({ phase: "rules" });
+    else if (state.phase === "rules") setState({ phase: "login" });
   }
   let armed = false;
   async function reset() {
@@ -226,6 +228,17 @@ if (!configured) {
       document.getElementById("wall").innerHTML = list.length
         ? list.slice(-80).reverse().map((a) => `<div class="card ${a.ok ? "ok" : ""}"><div class="nm">${esc(who(a.uid))}</div><div class="gs">${a.ok ? "●●●●●● ✓" : esc(a.guess)}</div></div>`).join("")
         : `<div class="empty">Attempts will appear here.</div>`;
+      return;
+    }
+
+    if (state.phase === "rules") {
+      if (fresh) {
+        app.innerHTML = `<div class="stage" style="grid-template-rows:auto minmax(0,1fr) auto">
+          <div class="top"><div><div class="label">Navanax</div><h1>Rules</h1></div></div>
+          <ol class="rules">${RULES.map((r) => `<li>${esc(r)}</li>`).join("")}</ol>
+          <div class="bottom">${joinStrip()}</div></div>`;
+        qr(Math.min(84, innerHeight * .09));
+      }
       return;
     }
 

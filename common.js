@@ -6,7 +6,7 @@ export * from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 const bust = "?t=" + Date.now();
 const { firebaseConfig } = await import("./config.js" + bust);
 const Q = await import("./questions.js" + bust);
-export const QUESTIONS = Q.QUESTIONS, HINT = Q.HINT, PASSWORD_SHA256 = Q.PASSWORD_SHA256;
+export const QUESTIONS = Q.QUESTIONS, HINT = Q.HINT, PASSWORD_SHA256 = Q.PASSWORD_SHA256, RULES = Q.RULES || [];
 
 export const configured = !!firebaseConfig;
 

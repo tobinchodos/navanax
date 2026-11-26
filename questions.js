@@ -2,6 +2,7 @@
 
 // Login screen. Only the password's SHA-256 hash is stored, so it can't be read from the page source.
 export const HINT = "The next president of the United States";
+export const PASSWORD_NOTE = "The password is all lowercase.";
 export const PASSWORD_SHA256 = "62f100bfa4c2aa8f07427e448b8660e0930da1146266c8bb32b5292e2cd0fb40";
 
 // Shown after the login screen, before question 1.

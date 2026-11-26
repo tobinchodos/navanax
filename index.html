@@ -18,7 +18,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("view");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<p class="center">Can't connect.<br><small>${m.replace(/</g, "&lt;")}</small></p>`; });
-import { configured, connect, QUESTIONS, HINT, RULES, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, scoreboard, ref, onValue, set, push } from "./common.js?v=9";
+import { configured, connect, QUESTIONS, HINT, RULES, PASSWORD_NOTE, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, scoreboard, ref, onValue, set, push } from "./common.js?v=10";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -108,7 +108,7 @@ if (!configured) {
   function loginView() {
     let tries = 0;
     view.innerHTML = `<div class="center"><h1>Log in</h1>
-      <div class="label">Hint</div><div class="hint">${esc(HINT)}</div>
+      <div class="label">Hint</div><div class="hint">${esc(HINT)}</div>${PASSWORD_NOTE ? `<p>${esc(PASSWORD_NOTE)}</p>` : ""}
       <form class="field" id="f"><input id="pw" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Password">
       <p class="err" id="err"></p><button class="primary">Log in</button></form></div>`;
     const f = document.getElementById("f"), pw = document.getElementById("pw"), err = document.getElementById("err");

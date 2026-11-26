@@ -93,8 +93,11 @@ if (!configured) {
       view.innerHTML = head + `<form class="field" id="f">`
         + (num ? `<input id="a" ${Q.range || Q.whole ? 'inputmode="numeric"' : Q.unit === "%" || Q.scale === "log" ? 'inputmode="text"' : 'inputmode="decimal"'} autocomplete="off" placeholder="${Q.scale === "log" ? "e.g. 3 million, 4e12" : Q.range ? `${Q.range[0]} to ${Q.range[1]}` : Q.unit === "%" ? "e.g. 8 or -3" : "Number"}" value="${esc(mine || "")}">`
                : `<textarea id="a" maxlength="280" placeholder="Your answer">${esc(mine || "")}</textarea>`)
+        + (num && Q.comment ? `<textarea id="c" maxlength="280" placeholder="Comment (optional)">${esc(answers[state.q]?.[uid]?.comment || "")}</textarea>` : "")
         + `<p class="${num ? "preview" : "err"}" id="msg"></p><button class="primary" id="go">Send</button></form>`;
       const f = document.getElementById("f"), a = document.getElementById("a"), msg = document.getElementById("msg");
+      const cBox = document.getElementById("c");
+      if (cBox) cBox.oninput = () => { busy = true; };
       a.oninput = () => {
         busy = true;
         if (num && Q.scale === "log") { const v = parseNum(a.value); msg.textContent = a.value.trim() && isFinite(v) ? "= " + fmtNum(v) : ""; }
@@ -107,7 +110,8 @@ if (!configured) {
         if (num && Q.whole && !(Number.isInteger(parseNum(text)) && parseNum(text) >= 0)) { msg.textContent = "Enter a whole number."; return; }
         if (num && Q.range && (parseNum(text) < Q.range[0] || parseNum(text) > Q.range[1])) { msg.textContent = `Enter ${Q.range[0]} to ${Q.range[1]}.`; return; }
         document.getElementById("go").disabled = true;
-        try { await set(ref(db, `answers/${state.q}/${uid}`), { text, t: Date.now() }); editing = false; busy = false; shown = ""; render(); }
+        const cEl = document.getElementById("c"), comment = cEl ? cEl.value.trim().slice(0, 280) : "";
+        try { await set(ref(db, `answers/${state.q}/${uid}`), { text, ...(comment ? { comment } : {}), t: Date.now() }); editing = false; busy = false; shown = ""; render(); }
         catch { msg.textContent = "Didn't go through. Answers may be closed."; document.getElementById("go").disabled = false; }
       };
       return;

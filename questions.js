@@ -14,7 +14,7 @@ export const RULES = [
 
 // Questions, in order.
 //   type:    "text" (free answer), "number" (live histogram) or "choice" (buttons; set options, and correct for the right one;
-//            comment: true adds an optional comment box)
+//            comment: true adds an optional comment box, on choice or number questions)
 //   answer:  for number questions, the correct value, marked on the histogram at reveal
 //   scale:   "log" for number questions whose guesses span many orders of magnitude
 //   reveal:  what the screen shows after you press Next: { image, text, caption } or { chart: "file.json", text, caption }
@@ -146,6 +146,7 @@ export const QUESTIONS = [
   {
     type: "number",
     q: "How much has artificial intelligence impacted your life?",
+    comment: true,
     judged: true,
     note: "0 = not at all, 10 = completely.",
     range: [0, 10],

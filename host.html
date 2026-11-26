@@ -281,7 +281,7 @@ if (!configured) {
           body = `<div class="revealwrap ${Q.type === "choice" ? "withbars" : ""}"><div class="reveal ${pic ? "" : "solo"}">${pic}
             <div><div class="big">${esc(R.text || "")}</div>${R.caption ? `<div class="cap">${esc(R.caption)}</div>` : ""}</div></div>
             ${Q.type === "choice" ? `<div class="histbox" id="hist"></div>` : `<div class="wall answers mini" id="wall"></div>`}</div>`;
-        } else if (Q.type === "choice" && Q.comment) {
+        } else if ((Q.type === "choice" || num) && Q.comment) {
           body = `<div class="split"><div class="histbox" id="hist"></div><div class="wall answers" id="cwall" style="align-content:flex-start"></div></div>`;
         } else if (num || Q.type === "choice") {
           body = extra ? `<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><div style="align-self:center">${extra}</div><div class="histbox" id="hist"></div></div>` : `<div class="histbox" id="hist"></div>`;

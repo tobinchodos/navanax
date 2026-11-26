@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Quiz Host</title>
+<title>Thanksgiving Host</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
@@ -12,63 +12,57 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-<div id="app" style="height:100%"><div class="msg" style="padding-top:30vh">Loading…</div></div>
+<div id="app" style="height:100%"><div class="msg">Loading…</div></div>
 <div class="ctrl" id="ctrl" hidden>
   <button id="prev" title="Left arrow">◀ Back</button>
-  <button id="reveal" title="Space">Reveal</button>
-  <button id="next" class="go" title="Right arrow">Next ▶</button>
+  <button id="next" class="go" title="Right arrow or space">Next ▶</button>
   <button id="reset">New game</button>
 </div>
 <script type="module">
-import { configured, connect, QUESTIONS, scores, esc, LETTERS, ref, onValue, set, get, update, remove } from "./common.js";
+import { configured, connect, QUESTIONS, HINT, esc, ref, onValue, set, get, update } from "./common.js";
 const app = document.getElementById("app");
-const COLORS = ["#f4b740", "#9cc49a", "#ff7a2f", "#e9a6b4", "#c9b3e6", "#8fc9d9"];
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 if (!configured) {
-  app.innerHTML = `<div class="msg" style="padding-top:25vh">Firebase isn't configured yet. Paste the config into <code>config.js</code>.</div>`;
+  app.innerHTML = `<div class="msg">Firebase isn't configured yet. Paste the config into <code>config.js</code>.</div>`;
 } else {
   const { db, uid } = await connect();
   const cfg = (await get(ref(db, "config/hostUid"))).val();
   if (!cfg) await set(ref(db, "config/hostUid"), uid);
-  else if (cfg !== uid) {
-    app.innerHTML = `<div class="msg" style="padding-top:20vh"><h1 class="serif" style="color:var(--ink);margin-bottom:16px">Not the host device</h1>This screen can watch, but only the browser that first opened the host page can run the quiz. To move hosting, delete <code>config/hostUid</code> in the Firebase console, then reload here.</div>`;
-  }
-  const isHost = !cfg || cfg === uid;
-  let state = { phase: "lobby", q: 0 }, players = {}, answers = {};
-  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "lobby", q: 0 }; render(); });
+  const isHost = !cfg || cfg === uid;   // other browsers can still mirror the screen, without controls
+
+  let state = { phase: "login", q: 0 }, players = {}, answers = {}, attempts = {};
+  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "login", q: 0 }; render(); });
   onValue(ref(db, "players"), (s) => { players = s.val() || {}; render(); });
   onValue(ref(db, "answers"), (s) => { answers = s.val() || {}; render(); });
+  onValue(ref(db, "attempts"), (s) => { attempts = s.val() || {}; render(); });
 
+  // Order: login screen, each question, end screen.
   const setState = (p) => isHost && set(ref(db, "state"), { ...state, ...p });
   function next() {
-    if (state.phase === "lobby") setState({ phase: "question", q: 0 });
-    else if (state.phase === "question") setState({ phase: "reveal" });
-    else if (state.phase === "reveal") state.q + 1 < QUESTIONS.length ? setState({ phase: "question", q: state.q + 1 }) : setState({ phase: "final" });
+    if (state.phase === "login") setState({ phase: "question", q: 0 });
+    else if (state.phase === "question") state.q + 1 < QUESTIONS.length ? setState({ q: state.q + 1 }) : setState({ phase: "end" });
   }
   function prev() {
-    if (state.phase === "final") setState({ phase: "reveal", q: QUESTIONS.length - 1 });
-    else if (state.phase === "reveal") setState({ phase: "question" });
-    else if (state.phase === "question") state.q > 0 ? setState({ phase: "reveal", q: state.q - 1 }) : setState({ phase: "lobby" });
+    if (state.phase === "end") setState({ phase: "question", q: QUESTIONS.length - 1 });
+    else if (state.phase === "question") state.q > 0 ? setState({ q: state.q - 1 }) : setState({ phase: "login" });
   }
   let armed = false;
   async function reset() {
     const b = document.getElementById("reset");
-    if (!armed) { armed = true; b.textContent = "Clear everyone? Click again"; setTimeout(() => { armed = false; b.textContent = "New game"; }, 3000); return; }
+    if (!armed) { armed = true; b.textContent = "Erase all guesses, names and answers? Click again"; setTimeout(() => { armed = false; b.textContent = "New game"; }, 4000); return; }
     armed = false; b.textContent = "New game";
-    await update(ref(db), { answers: null, players: null, state: { phase: "lobby", q: 0 } });
+    await update(ref(db), { answers: null, players: null, attempts: null, state: { phase: "login", q: 0 } });
   }
   if (isHost) {
     document.getElementById("ctrl").hidden = false;
     document.getElementById("next").onclick = next;
     document.getElementById("prev").onclick = prev;
-    document.getElementById("reveal").onclick = () => state.phase === "question" && setState({ phase: "reveal" });
     document.getElementById("reset").onclick = reset;
     addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight" || e.key === "PageDown") next();
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); next(); }
       else if (e.key === "ArrowLeft" || e.key === "PageUp") prev();
-      else if (e.key === " ") { e.preventDefault(); next(); }
       else if (e.key === "f") document.documentElement.requestFullscreen?.().catch(() => {});
     });
   }
@@ -77,58 +71,81 @@ if (!configured) {
     el.innerHTML = "";
     if (window.QRCode) new QRCode(el, { text: JOIN_URL, width: size, height: size, colorDark: "#2b0711", colorLight: "#ffffff" });
   }
-  const ids = () => Object.keys(players).sort((a, b) => (players[a].t || 0) - (players[b].t || 0));
+  // A guest is "Guest 3" until they pick a name; then every earlier guess shows their name too.
+  function labeler(list) {
+    const order = [];
+    for (const a of list) if (!order.includes(a.uid)) order.push(a.uid);
+    return (id) => players[id]?.name || `Guest ${order.indexOf(id) + 1}`;
+  }
+  const joinStrip = () => `<div class="join"><div class="url">Join at<br>${esc(JOIN)}</div><div class="qr" id="qr"></div></div>`;
 
   let lastKey = "";
   function render() {
-    if (!isHost && !cfg) return;
-    if (cfg && cfg !== uid && !app.dataset.watch) { app.dataset.watch = 1; }
-    const n = ids().length;
     const key = state.phase + ":" + state.q;
-    if (state.phase === "lobby") {
-      if (lastKey !== key) {
-        app.innerHTML = `<div class="stage" style="grid-template-rows:1fr"><div class="lobby">
-          <div><h1>Thanksgiving Quiz</h1><p class="how">Grab your phone and go to <b>${esc(JOIN)}</b></p><div class="players"><div class="qnum" id="pc"></div><div class="who" id="who" style="max-height:none"></div></div></div>
-          <div class="qrbig" id="qr"></div></div></div>`;
-        qr(document.getElementById("qr"), Math.min(380, innerHeight * .45));
-      }
-      document.getElementById("pc").textContent = n ? `${n} at the table` : "Waiting for the first guest…";
-      document.getElementById("who").innerHTML = ids().map((id) => `<span class="chip on">${esc(players[id].name)}</span>`).join("");
-    } else if (state.phase === "question" || state.phase === "reveal") {
-      const Q = QUESTIONS[state.q];
-      if (!Q) { app.innerHTML = `<div class="msg">No question ${state.q + 1} in questions.js.</div>`; lastKey = key; return; }
-      const reveal = state.phase === "reveal";
-      const a = answers[state.q] || {};
-      const counts = Q.options.map((_, i) => Object.entries(a).filter(([id, v]) => v === i && players[id]).length);
-      const total = counts.reduce((x, y) => x + y, 0);
-      const max = Math.max(1, ...counts);
-      if (lastKey !== key) {
-        app.innerHTML = `<div class="stage">
-          <div class="top"><div><div class="qnum">Question ${state.q + 1} of ${QUESTIONS.length}</div><h1>${esc(Q.q)}</h1></div>
-            <div class="tally"><div class="n" id="tn">0</div><div class="t">of <span id="tp">0</span> answered</div></div></div>
-          <div class="tiles ${Q.options.length === 3 || Q.options.length > 4 ? "c3" : ""}">${Q.options.map((o, i) => `
-            <div class="tile" id="t${i}" style="--c:${COLORS[i % COLORS.length]}"><div class="fill"></div>
-              <div class="row"><div class="txt"><span>${LETTERS[i]}</span>${esc(o)}</div><div class="cnt" id="c${i}"></div></div></div>`).join("")}</div>
-          <div class="bottom"><div class="who" id="who"></div><div class="join"><div class="url">${esc(JOIN)}</div><div class="qr" id="qr"></div></div></div></div>`;
-        qr(document.getElementById("qr"), 72);
-      }
-      document.getElementById("tn").textContent = total;
-      document.getElementById("tp").textContent = n;
-      Q.options.forEach((_, i) => {
-        const t = document.getElementById("t" + i);
-        // While answering, show only how many have voted, not where, so nobody copies. Reveal shows the split.
-        t.querySelector(".fill").style.height = reveal ? (counts[i] / max) * 100 + "%" : "0%";
-        document.getElementById("c" + i).textContent = reveal ? counts[i] : "";
-        t.classList.toggle("win", reveal && Q.answer === i);
-        t.classList.toggle("dim", reveal && Q.answer !== undefined && Q.answer !== i);
-      });
-      document.getElementById("who").innerHTML = ids().map((id) => `<span class="chip ${id in a ? "on" : ""}">${esc(players[id].name)}</span>`).join("");
-    } else if (state.phase === "final") {
-      const board = scores(QUESTIONS, answers, players, state);
-      app.innerHTML = `<div class="stage" style="grid-template-rows:auto 1fr"><div class="top"><div><div class="qnum">Final scores</div><h1>Who's carving the turkey</h1></div></div>
-        <ol class="board">${board.slice(0, 10).map((r, i) => `<li><span class="rk">${i + 1}</span><span>${esc(r.name)}</span><span class="pts">${r.pts}</span></li>`).join("") || "<li><span></span><span>No players</span><span></span></li>"}</ol></div>`;
-    }
+    const fresh = key !== lastKey;
     lastKey = key;
+
+    if (state.phase === "login") {
+      const list = Object.values(attempts).sort((a, b) => a.t - b.t);
+      const name = labeler(list);
+      const inCount = new Set(list.filter((a) => a.ok).map((a) => a.uid)).size;
+      if (fresh) {
+        app.innerHTML = `<div class="stage">
+          <div class="top"><div><div class="kick">Step one: get in</div><h1>Can you crack the password?</h1><div class="sub">Hint: <b>${esc(HINT)}</b></div></div>
+            <div class="tally"><div class="n" id="in">0</div><div class="t">got in · <span id="tries">0</span> guesses</div></div></div>
+          <div class="wall" id="wall"></div>
+          <div class="bottom">${joinStrip()}</div></div>`;
+        qr(document.getElementById("qr"), Math.min(150, innerHeight * .16));
+      }
+      document.getElementById("in").textContent = inCount;
+      document.getElementById("tries").textContent = list.length;
+      const recent = list.slice(-80).reverse();
+      document.getElementById("wall").innerHTML = recent.length
+        ? recent.map((a) => `<div class="card ${a.ok ? "ok" : ""}"><div class="nm">${esc(name(a.uid))}</div><div class="gs">${a.ok ? "●●●●●● ✓" : esc(a.guess)}</div></div>`).join("")
+        : `<div class="empty">Guesses will appear here as people try them.</div>`;
+      return;
+    }
+
+    if (state.phase === "question") {
+      const Q = QUESTIONS[state.q];
+      const a = answers[state.q] || {};
+      const list = Object.entries(a).filter(([id]) => players[id]).map(([id, v]) => ({ id, ...v })).sort((x, y) => x.t - y.t);
+      if (fresh) {
+        app.innerHTML = `<div class="stage">
+          <div class="top"><div><div class="kick">Question ${state.q + 1} of ${QUESTIONS.length}</div><h1>${esc(Q ?? "No question here, check questions.js")}</h1></div>
+            <div class="tally"><div class="n" id="n">0</div><div class="t">of <span id="tot">0</span> answered</div></div></div>
+          <div class="wall answers" id="wall"></div>
+          <div class="bottom"><div class="who" id="who"></div>${joinStrip()}</div></div>`;
+        qr(document.getElementById("qr"), Math.min(96, innerHeight * .1));
+      }
+      document.getElementById("n").textContent = list.length;
+      document.getElementById("tot").textContent = Object.keys(players).length;
+      const wall = document.getElementById("wall");
+      if (!list.length) wall.innerHTML = `<div class="empty">Answers will appear here.</div>`;
+      else {
+        // Update cards in place so only new or changed answers animate.
+        wall.querySelector(".empty")?.remove();
+        const have = new Map([...wall.querySelectorAll(".card")].map((c) => [c.dataset.id, c]));
+        for (const r of list) {
+          const old = have.get(r.id);
+          have.delete(r.id);
+          if (old && old.dataset.sig === String(r.t)) continue;
+          old?.remove();
+          const c = document.createElement("div");
+          c.className = "card"; c.dataset.id = r.id; c.dataset.sig = String(r.t);
+          c.innerHTML = `<div class="nm"></div><div class="gs"></div>`;
+          c.querySelector(".nm").textContent = players[r.id].name;
+          c.querySelector(".gs").textContent = r.text;
+          wall.append(c);
+        }
+        for (const c of have.values()) c.remove();
+      }
+      document.getElementById("who").innerHTML = Object.entries(players).sort((x, y) => x[1].t - y[1].t)
+        .map(([id, p]) => `<span class="chip ${id in a ? "on" : ""}">${esc(p.name)}</span>`).join("");
+      return;
+    }
+
+    if (fresh) app.innerHTML = `<div class="stage" style="grid-template-rows:1fr"><div style="margin:auto;text-align:center"><div class="kick">That's everything</div><h1 style="font-size:clamp(48px,7vw,120px);max-width:none">Happy Thanksgiving</h1></div></div>`;
   }
   render();
 }

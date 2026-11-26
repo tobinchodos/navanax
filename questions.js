@@ -1,21 +1,14 @@
-// The quiz. Edit freely; the host screen and phones both read this file.
-//   q:       the question
-//   options: 2 to 6 choices
-//   answer:  index of the correct option (0 = first). Leave it out for a poll with no right answer.
+// Everything you'll want to edit lives here.
+
+// The login screen. The password itself isn't stored here, only its SHA-256 hash,
+// so guests can't find it by viewing the page source. Ask Claude to set a new one.
+export const HINT = "Sample hint: the bird of the day";
+export const PASSWORD_SHA256 = "8d7d5397f8842b4181d38bc57b85b9ff1860456f92872c43f991a904c45062d5"; // sample password: turkey
+
+// The questions, in order. Guests type free-text answers.
 // SAMPLE QUESTIONS: replace these with your own.
 export const QUESTIONS = [
-  {
-    q: "Sample: In what year was the first Thanksgiving traditionally held at Plymouth?",
-    options: ["1492", "1621", "1776", "1863"],
-    answer: 1,
-  },
-  {
-    q: "Sample: Which side dish wins the table?",
-    options: ["Stuffing", "Mashed potatoes", "Cranberry sauce", "Green bean casserole"],
-  },
-  {
-    q: "Sample: About how many turkeys do Americans eat on Thanksgiving?",
-    options: ["4 million", "15 million", "46 million", "120 million"],
-    answer: 2,
-  },
+  "Sample: What are you most thankful for this year?",
+  "Sample: Best Thanksgiving side dish, and defend it.",
+  "Sample: Predict who falls asleep on the couch first.",
 ];

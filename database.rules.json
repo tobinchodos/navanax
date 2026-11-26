@@ -10,6 +10,14 @@
       ".read": true,
       ".write": "auth != null && auth.uid === root.child('config/hostUid').val()"
     },
+    "attempts": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === root.child('config/hostUid').val()",
+      "$id": {
+        ".write": "auth != null && !data.exists() && newData.child('uid').val() === auth.uid",
+        ".validate": "newData.child('guess').isString() && newData.child('guess').val().length <= 60 && newData.child('ok').isBoolean()"
+      }
+    },
     "players": {
       ".read": true,
       ".write": "auth != null && auth.uid === root.child('config/hostUid').val()",
@@ -24,7 +32,7 @@
       "$q": {
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && root.child('state/phase').val() === 'question' && (root.child('state/q').val() + '') === $q && root.child('players/' + $uid).exists()",
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 280"
         }
       }
     }

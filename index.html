@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#4a0d1f">
-<title>Thanksgiving Quiz</title>
+<title>Thanksgiving</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
@@ -12,85 +12,110 @@
 </head>
 <body>
 <main class="phone">
-  <header><b>Thanksgiving Quiz</b><span id="me"></span></header>
-  <section id="view" style="display:flex;flex-direction:column;flex:1"><p class="center">Loading…</p></section>
+  <header><b>Thanksgiving</b><span id="me"></span></header>
+  <section class="view" id="view"><p class="center">Loading…</p></section>
 </main>
 <script type="module">
-import { configured, connect, QUESTIONS, scores, esc, LETTERS, ref, onValue, set } from "./common.js";
+import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, ref, onValue, set, push } from "./common.js";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");
-const LEAF = `<svg class="leaf" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 58 28 78 18 72 40 94 44 76 58 86 76 62 70 56 92 50 78 44 92 38 70 14 76 24 58 6 44 28 40 22 18 42 28Z" fill="#ff7a2f"/><path d="M50 30V96" stroke="#f4b740" stroke-width="4" stroke-linecap="round"/></svg>`;
+const LOCK = `<svg class="lock" viewBox="0 0 84 84" aria-hidden="true"><rect x="14" y="36" width="56" height="42" rx="10" fill="#f4b740"/><path d="M26 36V26a16 16 0 0 1 32 0v10" fill="none" stroke="#f4b740" stroke-width="8"/><circle cx="42" cy="54" r="6" fill="#4a0d1f"/><rect x="39" y="56" width="6" height="12" rx="3" fill="#4a0d1f"/></svg>`;
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 
 if (!configured) {
-  view.innerHTML = `<p class="center">The quiz isn't connected yet. Check back soon.</p>`;
+  view.innerHTML = `<p class="center">Not open yet. Check back soon.</p>`;
 } else {
   const { db, uid } = await connect();
-  let state = null, players = {}, answers = {}, editing = false;
+  let state = null, players = {}, answers = {}, unlocked = store.get("unlocked") === "1";
+  let busy = false;   // true while the guest is typing, so live updates don't wipe their input
+  let editing = false;
 
-  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "lobby", q: 0 }; render(); });
+  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "login", q: 0 }; editing = false; render(); });
   onValue(ref(db, "players"), (s) => { players = s.val() || {}; render(); });
   onValue(ref(db, "answers"), (s) => { answers = s.val() || {}; render(); });
 
+  let shown = "";
   function render() {
-    if (!state || editing) return;
+    if (!state) return;
     const me = players[uid];
     meEl.textContent = me ? me.name : "";
-    if (!me) return joinView();
     const Q = QUESTIONS[state.q];
-    const mine = answers[state.q]?.[uid];
-    if (state.phase === "lobby") {
-      view.innerHTML = `<div class="center">${LEAF}<h1>You're in, ${esc(me.name)}.</h1><p>Eyes on the big screen. The first question appears here when it starts.</p><button class="primary" id="rename" style="background:transparent;color:var(--dim);border:1px solid var(--line)">Change name</button></div>`;
-      document.getElementById("rename").onclick = () => joinView(me.name);
-    } else if ((state.phase === "question" || state.phase === "reveal") && Q) {
-      const reveal = state.phase === "reveal";
-      const hasAns = Q.answer !== undefined;
-      view.innerHTML = `
-        <p style="color:var(--gold);font-weight:700;margin-bottom:8px">Question ${state.q + 1} of ${QUESTIONS.length}</p>
-        <h2>${esc(Q.q)}</h2>
-        <div class="opts">${Q.options.map((o, i) => {
-          let c = "";
-          if (reveal && hasAns && i === Q.answer) c = "right";
-          else if (reveal && hasAns && i === mine) c = "wrong";
-          else if (i === mine) c = "sel";
-          return `<button class="opt ${c}" data-i="${i}" ${reveal ? "disabled" : ""}><span class="l">${LETTERS[i]}</span>${esc(o)}</button>`;
-        }).join("")}</div>
-        <p class="note">${reveal
-          ? (!hasAns ? "Votes are in." : mine === undefined ? "No answer this time." : mine === Q.answer ? "Correct! 🦃" : "Not quite.")
-          : mine === undefined ? "Tap your answer." : "Locked in. You can change it until time's up."}</p>`;
-      if (!reveal) view.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
-        const i = +b.dataset.i;
-        answers[state.q] = { ...(answers[state.q] || {}), [uid]: i };
-        render();
-        set(ref(db, `answers/${state.q}/${uid}`), i).catch(() => {
-          view.querySelector(".note").textContent = "That didn't go through. Answers may be closed.";
-        });
-      });
-    } else if (state.phase === "final") {
-      const board = scores(QUESTIONS, answers, players, state);
-      const rank = board.findIndex((r) => r.id === uid) + 1;
-      const pts = board.find((r) => r.id === uid)?.pts ?? 0;
-      view.innerHTML = `<div class="center">${LEAF}<div class="big">${pts}</div><p style="margin-top:8px">point${pts === 1 ? "" : "s"}, ${ordinal(rank)} of ${board.length}</p><h1>Happy Thanksgiving!</h1></div>`;
-    } else {
-      view.innerHTML = `<p class="center">Hang tight…</p>`;
+    const mine = answers[state.q]?.[uid]?.text;
+    const key = !unlocked && !me ? "login" : !me ? "name" : state.phase === "question" && Q ? (mine && !editing ? "sent" : "answer") + state.q : state.phase;
+    if (key === shown && busy) return;   // don't redraw under someone's thumbs
+    if (key === shown && key.startsWith("answer")) return;
+    shown = key;
+    busy = false;
+
+    if (key === "login") return loginView();
+    if (key === "name") return nameView();
+    if (state.phase === "question" && Q) {
+      if (mine && !editing) {
+        view.innerHTML = `<p style="color:var(--gold);font-weight:700;margin-bottom:8px">Question ${state.q + 1}</p><h2>${esc(Q)}</h2>
+          <div class="sent"><small>Your answer is on the screen</small>${esc(mine)}</div>
+          <button class="ghost" id="edit">Change my answer</button>`;
+        document.getElementById("edit").onclick = () => { editing = true; render(); };
+        return;
+      }
+      view.innerHTML = `<p style="color:var(--gold);font-weight:700;margin-bottom:8px">Question ${state.q + 1}</p><h2>${esc(Q)}</h2>
+        <form class="field" id="f"><textarea id="a" maxlength="280" placeholder="Type your answer">${esc(mine || "")}</textarea>
+        <p class="err" id="err"></p><button class="primary" id="go">Send</button></form>`;
+      const f = document.getElementById("f"), a = document.getElementById("a");
+      a.oninput = () => { busy = true; };
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const text = a.value.trim().slice(0, 280);
+        if (!text) return;
+        document.getElementById("go").disabled = true;
+        try { await set(ref(db, `answers/${state.q}/${uid}`), { text, t: Date.now() }); editing = false; busy = false; shown = ""; render(); }
+        catch { document.getElementById("err").textContent = "That didn't go through. The question may be closed."; document.getElementById("go").disabled = false; }
+      };
+      return;
     }
+    if (state.phase === "end") {
+      view.innerHTML = `<div class="center"><h1>Happy Thanksgiving, ${esc(me.name)}.</h1><p>Thanks for playing.</p></div>`;
+      return;
+    }
+    view.innerHTML = `<div class="center">${LOCK}<h1>You're in, ${esc(me.name)}.</h1><p>Watch the big screen. Questions show up here when they start.</p></div>`;
   }
 
-  function joinView(prev = "") {
-    editing = true;
-    view.innerHTML = `<div class="center" style="text-align:left">${LEAF}<h1>Join the quiz</h1><p>Your name shows up on the big screen.</p>
-      <form class="field" id="f"><input id="name" maxlength="24" autocomplete="given-name" placeholder="Your name" value="${esc(prev)}" required><button class="primary" id="go">Join</button></form></div>`;
+  function loginView() {
+    let tries = 0;
+    view.innerHTML = `<div class="center">${LOCK}<h1>Log in</h1>
+      <div class="hint"><small>Hint</small>${esc(HINT)}</div>
+      <form class="field" id="f"><input id="pw" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="60" placeholder="Password">
+      <p class="err" id="err"></p><button class="primary" id="go">Log in</button></form></div>`;
+    const f = document.getElementById("f"), pw = document.getElementById("pw"), err = document.getElementById("err");
+    pw.oninput = () => { busy = true; };
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const guess = pw.value.trim().slice(0, 60);
+      if (!guess) return;
+      const ok = (await sha256(guess)) === PASSWORD_SHA256;
+      push(ref(db, "attempts"), { uid, guess: ok ? "" : guess, ok, t: Date.now() }).catch(() => {});
+      if (ok) { unlocked = true; store.set("unlocked", "1"); busy = false; shown = ""; render(); return; }
+      tries++;
+      err.textContent = tries > 1 ? `Wrong password (${tries} tries)` : "Wrong password";
+      f.classList.remove("shake"); void f.offsetWidth; f.classList.add("shake");
+      pw.value = ""; pw.focus();
+    };
+  }
+
+  function nameView() {
+    view.innerHTML = `<div class="center"><h1>You got in.</h1><p>What should we call you? Your name shows up next to your answers.</p>
+      <form class="field" id="f"><input id="name" maxlength="24" autocomplete="given-name" placeholder="Your name">
+      <p class="err" id="err"></p><button class="primary" id="go">Continue</button></form></div>`;
     const f = document.getElementById("f"), inp = document.getElementById("name");
-    inp.focus();
+    inp.oninput = () => { busy = true; };
     f.onsubmit = async (e) => {
       e.preventDefault();
       const name = inp.value.trim().slice(0, 24);
       if (!name) return;
       document.getElementById("go").disabled = true;
-      try { await set(ref(db, `players/${uid}`), { name, t: Date.now() }); editing = false; render(); }
-      catch { document.getElementById("go").disabled = false; inp.setCustomValidity("Couldn't join. Try again."); inp.reportValidity(); }
+      try { await set(ref(db, `players/${uid}`), { name, t: Date.now() }); busy = false; shown = ""; render(); }
+      catch { document.getElementById("err").textContent = "Couldn't save that. Try again."; document.getElementById("go").disabled = false; }
     };
   }
-  const ordinal = (n) => n + (["th","st","nd","rd"][(n % 100 - 20) % 10] || ["th","st","nd","rd"][n % 100] || "th");
 }
 </script>
 </body>

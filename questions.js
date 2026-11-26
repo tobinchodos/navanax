@@ -80,6 +80,17 @@ export const QUESTIONS = [
   },
   {
     type: "text",
+    q: "Whose hand is this?",
+    image: "jordan-hand.jpg",
+    accept: ["jordan"],
+    reveal: {
+      image: "jordan.jpg",
+      text: "Michael Jordan",
+      caption: "Photo: Steve Lipofsky, Basketballphoto.com, CC BY-SA 3.0 (cropped for the question).",
+    },
+  },
+  {
+    type: "text",
     q: "What is one thing the other side of the political spectrum got right recently?",
     note: "The right if you lean left, the left if you lean right.",
     judged: true,

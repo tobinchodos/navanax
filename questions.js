@@ -52,6 +52,15 @@ export const QUESTIONS = [
     reveal: { image: "bush.jpg", text: "George H. W. Bush", caption: "Hand: Bush gives troops a thumbs-up, Dec 31, 1992 (U.S. National Archives). Portrait: official, 1989. Both public domain." },
   },
   {
+    type: "text",
+    q: "What wars happened on George H. W. Bush’s watch?",
+    accept: ["gulf", "desert storm", "desert shield", "iraq", "kuwait", "panama", "just cause", "noriega"],
+    reveal: {
+      text: "Panama (1989) and the Gulf War (1990–91)",
+      caption: "Operation Just Cause in Panama, and Operations Desert Shield and Desert Storm in Iraq and Kuwait. He also sent troops to Somalia in Dec 1992 (Operation Restore Hope).",
+    },
+  },
+  {
     type: "number",
     q: "How old is Danny Chodos?",
     answer: 81,

@@ -34,7 +34,13 @@ export const hasReveal = (Q) => !!Q && (Q.answer !== undefined || !!Q.reveal || 
 // Reads numbers the way people type them: "81", "2,400", "3.5 million", "2.4e18", "5 x 10^12", "20!".
 const WORDS = { k: 1e3, thousand: 1e3, m: 1e6, mil: 1e6, million: 1e6, b: 1e9, bn: 1e9, billion: 1e9, t: 1e12, trillion: 1e12, quadrillion: 1e15, quintillion: 1e18, sextillion: 1e21, septillion: 1e24, octillion: 1e27, nonillion: 1e30, decillion: 1e33 };
 export function parseNum(input) {
-  const s = String(input).toLowerCase().replace(/,/g, "").replace(/\s+/g, " ").trim();
+  let s = String(input).toLowerCase().replace(/,/g, "").replace(/\s+/g, " ").trim().replace(/ ?%$/, "");
+  const neg = /^[-−–]/.test(s);
+  s = s.replace(/^[-−–+] ?/, "");
+  const v = parseAbs(s);
+  return neg ? -v : v;
+}
+function parseAbs(s) {
   let m;
   if ((m = s.match(/^(\d+) ?!$/))) { const n = +m[1]; if (n > 170) return Infinity; let r = 1; for (let i = 2; i <= n; i++) r *= i; return r; }
   if ((m = s.match(/^(\d*\.?\d+) ?(?:x|\*|×) ?10 ?\^ ?(-?\d+)$/))) return +m[1] * 10 ** +m[2];

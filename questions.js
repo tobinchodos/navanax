@@ -8,10 +8,14 @@ export const PASSWORD_SHA256 = "62f100bfa4c2aa8f07427e448b8660e0930da1146266c8bb
 //   type:    "text" (free answer) or "number" (live histogram)
 //   answer:  for number questions, the correct value, marked on the histogram at reveal
 //   scale:   "log" for number questions whose guesses span many orders of magnitude
-//   reveal:  what the screen shows after you press Next: { image, caption } or { text }
+//   reveal:  what the screen shows after you press Next: { image, text, caption } or { chart: "file.json", text, caption }
 //   figure:  a drawing shown with the question ("seats")
 //   quote:   a quotation shown with the question
 //   accept:  for text questions, words that count as correct (case-insensitive). Number questions: closest guess wins.
+//   image:   a picture shown with the question
+//   note:    a smaller line under the question
+//   range:   [min, max] for number questions on a fixed scale (e.g. 0–10)
+//   unit:    shown after numbers, e.g. "%"
 //   judged:  true for subjective questions: at reveal the host clicks the winning answer(s).
 //   On any reveal screen the host can click an answer to flip it between right and wrong.
 //   Questions with none of answer, accept or judged aren't scored.
@@ -53,5 +57,54 @@ export const QUESTIONS = [
       text: "The holidays are part and parcel of the gross fraud, wrong, and inhumanity of slavery. … Their object seems to be, to disgust their slaves with freedom, by plunging them into the lowest depths of dissipation. … So, when the holidays ended, we staggered up from the filth of our wallowing, took a long breath, and marched to the field,—feeling, upon the whole, rather glad to go, from what our master had deceived us into a belief was freedom, back to the arms of slavery.",
       cite: "Frederick Douglass, Narrative of the Life of Frederick Douglass, an American Slave (1845)",
     },
+  },
+  {
+    type: "number",
+    q: "How much has the S&P 500 gained or lost so far in 2026?",
+    note: "In percent. Use a minus sign for a loss.",
+    unit: "%",
+    answer: 4.93,
+    answerLabel: "+4.9%",
+    reveal: {
+      chart: "spx2026.json",
+      text: "+4.9%",
+      caption: "S&P 500 close: 6,845.50 on Dec 31, 2025 to 7,182.78 on Nov 25, 2026. Sources: FRED, Yahoo Finance.",
+    },
+  },
+  {
+    type: "text",
+    q: "Whose hand is this?",
+    image: "hand.jpg",
+    accept: ["bush"],
+    reveal: { image: "bush.jpg", text: "George H. W. Bush", caption: "Official portrait, 1989. Public domain." },
+  },
+  {
+    type: "text",
+    q: "What is one thing the other side of the political spectrum got right recently?",
+    note: "The right if you lean left, the left if you lean right.",
+    judged: true,
+  },
+  {
+    type: "number",
+    q: "How much has artificial intelligence impacted your life?",
+    note: "0 = not at all, 10 = completely.",
+    range: [0, 10],
+  },
+  {
+    type: "text",
+    q: "What is the Turing Test, and why do we care?",
+    judged: true,
+  },
+  {
+    type: "text",
+    q: "What does the acronym AGI stand for?",
+    accept: ["general intelligence"],
+    reveal: { text: "Artificial General Intelligence" },
+  },
+  {
+    type: "text",
+    q: "What does the acronym RSI stand for?",
+    accept: ["recursive", "self-improvement", "self improvement"],
+    reveal: { text: "Recursive Self-Improvement" },
   },
 ];

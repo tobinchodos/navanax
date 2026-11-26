@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=8">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -22,7 +22,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("app");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("app"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=6";
+import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=7";
 const app = document.getElementById("app");
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -103,8 +103,10 @@ if (!configured) {
     const pts = list.map((r) => ({ ...r, v: parseNum(r.text) })).map((r) => ({ ...r, x: tx(r.v) })).filter((r) => isFinite(r.x));
     const ans = Q.answer !== undefined ? tx(Q.answer) : NaN;
     const xs = pts.map((r) => r.x).concat(reveal && isFinite(ans) ? [ans] : []);
+    if (Q.range) xs.push(...Q.range);
     if (!xs.length) return `<div class="empty">Guesses will appear here.</div>`;
     const lo = Math.min(...xs), hi = Math.max(...xs);
+    const u = Q.unit || "";
     const raw = Math.max(hi - lo, 1) / 14, pow = 10 ** Math.floor(Math.log10(raw));
     const step = Math.max(1, [1, 2, 5, 10].map((m) => m * pow).find((s) => s >= raw));
     const start = Math.floor(lo / step) * step;
@@ -117,12 +119,12 @@ if (!configured) {
     const lab = (i) => {
       const k = start + i * step;
       if (log) return step === 1 ? `10<sup>${k}</sup>` : `10<sup>${k}–${k + step - 1}</sup>`;
-      return step === 1 ? `${k}` : `${k}–${k + step - 1}`;
+      return step === 1 && !u ? `${k}` : u ? `${k} to ${k + step}${u}` : `${k}–${k + step - 1}`;
     };
     const every = n > 24 ? Math.ceil(n / 12) : 1;
     let closest = "";
     const winners = pts.filter((r) => wins.has(r.id));
-    if (reveal && winners.length) closest = `<div class="closest">Point to ${winners.map((w) => `<b>${esc(nameOf(w.id))}</b> (${esc(fmtNum(w.v))})`).join(", ")}</div>`;
+    if (reveal && winners.length) closest = `<div class="closest">Point to ${winners.map((w) => `<b>${esc(nameOf(w.id))}</b> (${esc(fmtNum(w.v) + u)})`).join(", ")}</div>`;
     return `<div class="hist"><div class="cols" style="--max:${max}">${cols.map((c, i) => `
       <div class="col ${i === hit ? "hit" : ""}">${c.map((r) => `<div class="blk ${wins.has(r.id) ? "win" : ""}" data-id="${esc(r.id)}" title="${esc(r.text)}">${esc(nameOf(r.id))}</div>`).join("")}
       ${i === hit ? `<div class="flag"><span>${esc(Q.answerLabel || fmtNum(Q.answer))}</span></div>` : ""}</div>`).join("")}</div>
@@ -151,6 +153,33 @@ if (!configured) {
     }
     for (const c of have.values()) c.remove();
     if (wins) for (const c of wall.querySelectorAll(".card")) c.classList.toggle("ok", wins.has(c.dataset.id));
+  }
+
+  // Line chart of percent change since the first data point, e.g. S&P 500 year to date.
+  const chartData = {};
+  async function drawChart(file) {
+    const box = document.getElementById("chart");
+    if (!box) return;
+    try { chartData[file] ??= await (await fetch(file + "?t=" + Date.now())).json(); } catch { box.textContent = "Chart data missing."; return; }
+    const pts = chartData[file], base = pts[0][1];
+    const ys = pts.map(([, v]) => (v / base - 1) * 100);
+    const t0 = Date.parse(pts[0][0]), t1 = Date.parse(pts[pts.length - 1][0]);
+    const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const draw = () => {
+      if (!document.body.contains(box)) { ro.disconnect(); return; }
+      const W = box.clientWidth, H = box.clientHeight, L = 52, R = 84, T = 16, B = 30;
+      const lo = Math.floor(Math.min(0, ...ys) / 5) * 5, hi = Math.ceil(Math.max(0, ...ys) / 5) * 5;
+      const x = (d) => L + ((Date.parse(d) - t0) / (t1 - t0)) * (W - L - R);
+      const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+      let g = "";
+      for (let v = lo; v <= hi; v += 5) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? "#fff" : "#333"}" ${v === 0 ? 'stroke-dasharray="4 4"' : ""}/><text x="${L - 10}" y="${y(v) + 5}" text-anchor="end">${v > 0 ? "+" : ""}${v}%</text>`;
+      for (let m = 0; m < 12; m++) { const d = `2026-${String(m + 1).padStart(2, "0")}-01`; const xx = x(d); if (xx >= L && xx <= W - R) g += `<text x="${xx}" y="${H - 8}" text-anchor="middle">${MON[m]}</text>`; }
+      const line = pts.map(([d], i) => `${i ? "L" : "M"}${x(d).toFixed(1)},${y(ys[i]).toFixed(1)}`).join("");
+      const ex = x(pts[pts.length - 1][0]), ey = y(ys[ys.length - 1]), last = ys[ys.length - 1];
+      box.innerHTML = `<svg width="${W}" height="${H}" font-size="14" fill="#8c8c8c">${g}<path d="${line}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><circle cx="${ex}" cy="${ey}" r="5" fill="#fff"/><text x="${ex + 10}" y="${ey + 6}" fill="#fff" font-size="20" font-weight="600">${last >= 0 ? "+" : ""}${last.toFixed(1)}%</text></svg>`;
+    };
+    const ro = new ResizeObserver(draw);
+    ro.observe(box);
   }
 
   // Small top-five leaderboard in the corner during play, once anything has been scored.
@@ -207,13 +236,16 @@ if (!configured) {
       const a = answers[state.q] || {};
       const list = Object.entries(a).filter(([id]) => players[id]).map(([id, v]) => ({ id, ...v })).sort((x, y) => x.t - y.t);
       const num = Q.type === "number";
-      const extra = Q.figure === "seats" ? seatsSVG() : Q.quote ? `<blockquote>${esc(Q.quote.text)}<cite>${esc(Q.quote.cite)}</cite></blockquote>` : "";
+      const extra = Q.figure === "seats" ? seatsSVG()
+        : Q.quote ? `<blockquote>${esc(Q.quote.text)}<cite>${esc(Q.quote.cite)}</cite></blockquote>`
+        : Q.image ? `<img class="qimg" src="${esc(Q.image)}" alt="" onerror="this.remove()">` : "";
 
       if (fresh) {
         let body;
         if (reveal && Q.reveal) {
           const R = Q.reveal;
-          body = `<div class="revealwrap"><div class="reveal ${R.image ? "" : "solo"}">${R.image ? `<img src="${esc(R.image)}" alt="">` : ""}
+          const pic = R.chart ? `<div class="chartbox" id="chart"></div>` : R.image ? `<img src="${esc(R.image)}" alt="">` : "";
+          body = `<div class="revealwrap"><div class="reveal ${pic ? "" : "solo"}">${pic}
             <div><div class="big">${esc(R.text || "")}</div>${R.caption ? `<div class="cap">${esc(R.caption)}</div>` : ""}</div></div>
             <div class="wall answers mini" id="wall"></div></div>`;
         } else if (num) {
@@ -222,11 +254,12 @@ if (!configured) {
           body = extra ? `<div class="split">${extra}<div class="wall answers" id="wall" style="align-content:flex-start"></div></div>` : `<div class="wall answers" id="wall"></div>`;
         }
         app.innerHTML = `<div class="stage">
-          <div class="top"><div><div class="label">${state.q + 1} / ${QUESTIONS.length}</div><h1>${esc(Q.q)}</h1></div>
+          <div class="top"><div><div class="label">${state.q + 1} / ${QUESTIONS.length}</div><h1>${esc(Q.q)}</h1>${Q.note ? `<div class="sub">${esc(Q.note)}</div>` : ""}</div>
             <div class="tally"><div class="n" id="n">0</div><div class="t">of <span id="tot">0</span> answered</div></div></div>
           ${body}
           <div class="bottom"><div class="lb" id="lb"></div>${joinStrip()}</div></div>`;
         qr(Math.min(84, innerHeight * .09));
+        if (reveal && Q.reveal?.chart) drawChart(Q.reveal.chart);
       }
       document.getElementById("n").textContent = list.length;
       document.getElementById("tot").textContent = Object.keys(players).length;

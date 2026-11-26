@@ -39,7 +39,7 @@ export const QUESTIONS = [
   },
   {
     type: "text",
-    q: "What’s your favorite meal at the Thanksgiving table?",
+    q: "What was the best food on the table today?",
     judged: true,
   },
   {

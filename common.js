@@ -29,7 +29,7 @@ export async function sha256(text) {
 
 export const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-export const hasReveal = (Q) => !!Q && (Q.answer !== undefined || !!Q.reveal || !!Q.accept || !!Q.judged);
+export const hasReveal = (Q) => !!Q && (Q.answer !== undefined || !!Q.reveal || !!Q.accept || !!Q.judged || !!Q.correct);
 
 // Reads numbers the way people type them: "81", "2,400", "3.5 million", "2.4e18", "5 x 10^12", "20!".
 const WORDS = { k: 1e3, thousand: 1e3, m: 1e6, mil: 1e6, million: 1e6, b: 1e9, bn: 1e9, billion: 1e9, t: 1e12, trillion: 1e12, quadrillion: 1e15, quintillion: 1e18, sextillion: 1e21, septillion: 1e24, octillion: 1e27, nonillion: 1e30, decillion: 1e33 };
@@ -73,7 +73,7 @@ export function seatsSVG() {
 }
 
 // ---------- scoring ----------
-export const isScored = (Q) => !!Q && (Q.answer !== undefined || !!Q.accept || !!Q.judged);
+export const isScored = (Q) => !!Q && (Q.answer !== undefined || !!Q.accept || !!Q.judged || !!Q.correct);
 
 // Who got question i right: closest guess(es) for numbers, any accepted word for text.
 // Judged questions start with nobody. Host clicks (state.marks["q"+i][uid] = true/false) win.
@@ -86,6 +86,8 @@ export function correctSet(Q, i, answers, marks) {
     const target = tx(Q.answer);
     const d = Object.entries(a).map(([id, r]) => [id, Math.abs(tx(parseNum(r.text)) - target)]).filter(([, x]) => isFinite(x));
     if (d.length) { const best = Math.min(...d.map(([, x]) => x)); for (const [id, x] of d) if (x - best < 1e-9) out.add(id); }
+  } else if (Q.type === "choice" && Q.correct) {
+    for (const [id, r] of Object.entries(a)) if (r.text === Q.correct) out.add(id);
   } else if (Q.accept) {
     for (const [id, r] of Object.entries(a)) {
       const t = String(r.text).toLowerCase();

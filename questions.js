@@ -13,7 +13,7 @@ export const RULES = [
 ];
 
 // Questions, in order.
-//   type:    "text" (free answer), "number" (live histogram) or "choice" (buttons; set options)
+//   type:    "text" (free answer), "number" (live histogram) or "choice" (buttons; set options, and correct for the right one)
 //   answer:  for number questions, the correct value, marked on the histogram at reveal
 //   scale:   "log" for number questions whose guesses span many orders of magnitude
 //   reveal:  what the screen shows after you press Next: { image, text, caption } or { chart: "file.json", text, caption }
@@ -187,6 +187,21 @@ export const QUESTIONS = [
     reveal: { text: "Recursive Self-Improvement" },
   },
   {
+    type: "choice",
+    q: "In AI-speak, what is a “token”?",
+    options: [
+      "A chunk of text, often part of a word, that the model reads and writes",
+      "A cryptocurrency used to pay for AI",
+      "A password that unlocks an AI model",
+      "One full sentence of the AI’s answer",
+    ],
+    correct: "A chunk of text, often part of a word, that the model reads and writes",
+    reveal: {
+      text: "“unbelievable” → un · believ · able",
+      caption: "Models see text as tokens, roughly ¾ of an English word each, so a long word can be several tokens and a short one is often one. Exact splits vary by model. AI usage is priced and limited by tokens.",
+    },
+  },
+  {
     type: "text",
     q: "Give your best example of internet slang.",
     note: "Include a definition.",
@@ -225,6 +240,12 @@ export const QUESTIONS = [
     q: "How many credit cards are in your name?",
     judged: true,
     whole: true,
+  },
+  {
+    type: "choice",
+    q: "Do you owe the government money, does the government owe you money, or are you even-steven?",
+    options: ["I owe the government", "The government owes me", "Even-steven"],
+    judged: true,
   },
   {
     type: "text",

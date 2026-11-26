@@ -189,18 +189,12 @@ export const QUESTIONS = [
     reveal: { text: "Recursive Self-Improvement" },
   },
   {
-    type: "choice",
+    type: "text",
     q: "In AI-speak, what is a “token”?",
-    options: [
-      "A chunk of text, often part of a word, that the model reads and writes",
-      "A cryptocurrency used to pay for AI",
-      "A password that unlocks an AI model",
-      "One full sentence of the AI’s answer",
-    ],
-    correct: "A chunk of text, often part of a word, that the model reads and writes",
+    judged: true,
     reveal: {
-      text: "“unbelievable” → un · believ · able",
-      caption: "Models see text as tokens, roughly ¾ of an English word each, so a long word can be several tokens and a short one is often one. Exact splits vary by model. AI usage is priced and limited by tokens.",
+      text: "“Thanksgiving” → Thanks · giving",
+      caption: "A token is a chunk of text, often part of a word, that the model reads and writes as a number. In GPT-2’s tokenizer, “Thanksgiving” is two tokens, Thanks (#9690) and giving (#13992), and “Navanax” is three: N · avan · ax. AI usage is priced and limited by tokens.",
     },
   },
   {

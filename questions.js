@@ -159,6 +159,17 @@ export const QUESTIONS = [
   },
   {
     type: "text",
+    q: "Give your best example of internet slang.",
+    note: "Include a definition.",
+    judged: true,
+  },
+  {
+    type: "text",
+    q: "What’s something boomers say?",
+    judged: true,
+  },
+  {
+    type: "text",
     q: "Two years ago, instead of saying what we were grateful for, we all shared the worst pain we’d ever felt. Can you remember a single thing anyone said that day?",
     judged: true,
   },

@@ -2,8 +2,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 export * from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { firebaseConfig } from "./config.js";
-export { QUESTIONS, HINT, PASSWORD_SHA256 } from "./questions.js";
+// Loaded fresh every time so edits to the password, hint or questions show up immediately.
+const bust = "?t=" + Date.now();
+const { firebaseConfig } = await import("./config.js" + bust);
+const Q = await import("./questions.js" + bust);
+export const QUESTIONS = Q.QUESTIONS, HINT = Q.HINT, PASSWORD_SHA256 = Q.PASSWORD_SHA256;
 
 export const configured = !!firebaseConfig;
 

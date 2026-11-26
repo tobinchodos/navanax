@@ -17,7 +17,7 @@
 </main>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the quiz database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, ref, onValue, set, push } from "./common.js";
+import { configured, connect, QUESTIONS, HINT, PASSWORD_SHA256, sha256, esc, ref, onValue, set, push } from "./common.js?v=3";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");
 const LOCK = `<svg class="lock" viewBox="0 0 84 84" aria-hidden="true"><rect x="14" y="36" width="56" height="42" rx="10" fill="#f4b740"/><path d="M26 36V26a16 16 0 0 1 32 0v10" fill="none" stroke="#f4b740" stroke-width="8"/><circle cx="42" cy="54" r="6" fill="#4a0d1f"/><rect x="39" y="56" width="6" height="12" rx="3" fill="#4a0d1f"/></svg>`;

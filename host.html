@@ -99,11 +99,11 @@ if (!configured) {
   const nameOf = (id) => players[id]?.name || "Guest";
 
   // Bar per option (e.g. Yes / No), each answer a name-labelled block, count above.
-  function choiceBars(Q, list) {
+  function choiceBars(Q, list, wins) {
     const cols = Q.options.map((o) => list.filter((r) => r.text === o));
     const max = Math.max(3, ...cols.map((c) => c.length));
     return `<div class="hist choice-hist"><div class="cols" style="--max:${max}">${cols.map((c) => `
-      <div class="col">${c.map((r) => `<div class="blk">${esc(nameOf(r.id))}</div>`).join("")}<div class="cnt-top">${c.length}</div></div>`).join("")}</div>
+      <div class="col">${c.map((r) => `<div class="blk ${wins.has(r.id) ? "win" : ""}" data-id="${esc(r.id)}">${esc(nameOf(r.id))}</div>`).join("")}<div class="cnt-top">${c.length}</div></div>`).join("")}</div>
       <div class="xs">${Q.options.map((o) => `<div>${esc(o)}</div>`).join("")}</div></div>`;
   }
 
@@ -287,7 +287,7 @@ if (!configured) {
       document.getElementById("tot").textContent = Object.keys(players).length;
       const hist = document.getElementById("hist");
       const wins = reveal && isScored(Q) ? correctSet(Q, state.q, answers, state.marks) : null;
-      if (hist) hist.innerHTML = Q.type === "choice" ? choiceBars(Q, list) : histogram(Q, list, reveal, wins || new Set());
+      if (hist) hist.innerHTML = Q.type === "choice" ? choiceBars(Q, list, wins || new Set()) : histogram(Q, list, reveal, wins || new Set());
       fillWall(list, wins);
       miniBoard();
       return;

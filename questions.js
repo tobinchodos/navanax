@@ -129,6 +129,7 @@ export const QUESTIONS = [
   {
     type: "number",
     q: "How much has artificial intelligence impacted your life?",
+    judged: true,
     note: "0 = not at all, 10 = completely.",
     range: [0, 10],
   },
@@ -172,11 +173,13 @@ export const QUESTIONS = [
   {
     type: "choice",
     q: "Without checking, can you remember what underwear you’re wearing?",
+    judged: true,
     options: ["Yes", "No"],
   },
   {
     type: "number",
     q: "How many credit cards are in your name?",
+    judged: true,
     whole: true,
   },
   {

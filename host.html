@@ -23,8 +23,8 @@
 import { configured, connect, QUESTIONS, scores, esc, LETTERS, ref, onValue, set, get, update, remove } from "./common.js";
 const app = document.getElementById("app");
 const COLORS = ["#f4b740", "#9cc49a", "#ff7a2f", "#e9a6b4", "#c9b3e6", "#8fc9d9"];
-const JOIN = location.host || "the quiz site";
-const JOIN_URL = location.origin && location.origin !== "null" ? location.origin + "/" : location.href.replace(/host\.html.*$/, "");
+const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
+const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 if (!configured) {
   app.innerHTML = `<div class="msg" style="padding-top:25vh">Firebase isn't configured yet. Paste the config into <code>config.js</code>.</div>`;

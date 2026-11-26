@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=11">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -22,7 +22,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("app");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("app"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, RULES, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=8";
+import { configured, connect, QUESTIONS, HINT, RULES, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=9";
 const app = document.getElementById("app");
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -97,6 +97,15 @@ if (!configured) {
   }
   const joinStrip = () => `<div class="join"><div class="url">Join at<br><b>${esc(JOIN)}</b></div><div class="qr" id="qr"></div></div>`;
   const nameOf = (id) => players[id]?.name || "Guest";
+
+  // Bar per option (e.g. Yes / No), each answer a name-labelled block, count above.
+  function choiceBars(Q, list) {
+    const cols = Q.options.map((o) => list.filter((r) => r.text === o));
+    const max = Math.max(3, ...cols.map((c) => c.length));
+    return `<div class="hist choice-hist"><div class="cols" style="--max:${max}">${cols.map((c) => `
+      <div class="col">${c.map((r) => `<div class="blk">${esc(nameOf(r.id))}</div>`).join("")}<div class="cnt-top">${c.length}</div></div>`).join("")}</div>
+      <div class="xs">${Q.options.map((o) => `<div>${esc(o)}</div>`).join("")}</div></div>`;
+  }
 
   // Histogram of numeric guesses. Log questions bin by power of ten.
   function histogram(Q, list, reveal, wins) {
@@ -261,7 +270,7 @@ if (!configured) {
           body = `<div class="revealwrap"><div class="reveal ${pic ? "" : "solo"}">${pic}
             <div><div class="big">${esc(R.text || "")}</div>${R.caption ? `<div class="cap">${esc(R.caption)}</div>` : ""}</div></div>
             <div class="wall answers mini" id="wall"></div></div>`;
-        } else if (num) {
+        } else if (num || Q.type === "choice") {
           body = extra ? `<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><div style="align-self:center">${extra}</div><div class="histbox" id="hist"></div></div>` : `<div class="histbox" id="hist"></div>`;
         } else {
           body = extra ? `<div class="split">${extra}<div class="wall answers" id="wall" style="align-content:flex-start"></div></div>` : `<div class="wall answers" id="wall"></div>`;
@@ -278,7 +287,7 @@ if (!configured) {
       document.getElementById("tot").textContent = Object.keys(players).length;
       const hist = document.getElementById("hist");
       const wins = reveal && isScored(Q) ? correctSet(Q, state.q, answers, state.marks) : null;
-      if (hist) hist.innerHTML = histogram(Q, list, reveal, wins || new Set());
+      if (hist) hist.innerHTML = Q.type === "choice" ? choiceBars(Q, list) : histogram(Q, list, reveal, wins || new Set());
       fillWall(list, wins);
       miniBoard();
       return;

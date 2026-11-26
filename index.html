@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 <main class="phone">
@@ -18,7 +18,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("view");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("view"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<p class="center">Can't connect.<br><small>${m.replace(/</g, "&lt;")}</small></p>`; });
-import { configured, connect, QUESTIONS, HINT, RULES, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, scoreboard, ref, onValue, set, push } from "./common.js?v=8";
+import { configured, connect, QUESTIONS, HINT, RULES, PASSWORD_SHA256, sha256, esc, parseNum, fmtNum, seatsSVG, scoreboard, ref, onValue, set, push } from "./common.js?v=9";
 const view = document.getElementById("view");
 const meEl = document.getElementById("me");
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
@@ -60,9 +60,18 @@ if (!configured) {
         if (b) b.onclick = () => { editing = true; render(); };
         return;
       }
+      if (Q.type === "choice") {
+        view.innerHTML = head + `<div class="choices">${Q.options.map((o) => `<button class="choice ${mine === o ? "on" : ""}" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div><p class="err" id="msg"></p>`;
+        view.querySelectorAll(".choice").forEach((b) => b.onclick = async () => {
+          view.querySelectorAll(".choice").forEach((x) => x.disabled = true);
+          try { await set(ref(db, `answers/${state.q}/${uid}`), { text: b.dataset.o, t: Date.now() }); editing = false; shown = ""; render(); }
+          catch { document.getElementById("msg").textContent = "Didn't go through. Answers may be closed."; view.querySelectorAll(".choice").forEach((x) => x.disabled = false); }
+        });
+        return;
+      }
       const num = Q.type === "number";
       view.innerHTML = head + `<form class="field" id="f">`
-        + (num ? `<input id="a" ${Q.range ? 'inputmode="numeric"' : Q.unit === "%" || Q.scale === "log" ? 'inputmode="text"' : 'inputmode="decimal"'} autocomplete="off" placeholder="${Q.scale === "log" ? "e.g. 3 million, 4e12" : Q.range ? `${Q.range[0]} to ${Q.range[1]}` : Q.unit === "%" ? "e.g. 8 or -3" : "Number"}" value="${esc(mine || "")}">`
+        + (num ? `<input id="a" ${Q.range || Q.whole ? 'inputmode="numeric"' : Q.unit === "%" || Q.scale === "log" ? 'inputmode="text"' : 'inputmode="decimal"'} autocomplete="off" placeholder="${Q.scale === "log" ? "e.g. 3 million, 4e12" : Q.range ? `${Q.range[0]} to ${Q.range[1]}` : Q.unit === "%" ? "e.g. 8 or -3" : "Number"}" value="${esc(mine || "")}">`
                : `<textarea id="a" maxlength="280" placeholder="Your answer">${esc(mine || "")}</textarea>`)
         + `<p class="${num ? "preview" : "err"}" id="msg"></p><button class="primary" id="go">Send</button></form>`;
       const f = document.getElementById("f"), a = document.getElementById("a"), msg = document.getElementById("msg");
@@ -75,6 +84,7 @@ if (!configured) {
         const text = a.value.trim().slice(0, 280);
         if (!text) return;
         if (num && !isFinite(parseNum(text))) { msg.textContent = "Enter a number."; return; }
+        if (num && Q.whole && !(Number.isInteger(parseNum(text)) && parseNum(text) >= 0)) { msg.textContent = "Enter a whole number."; return; }
         if (num && Q.range && (parseNum(text) < Q.range[0] || parseNum(text) > Q.range[1])) { msg.textContent = `Enter ${Q.range[0]} to ${Q.range[1]}.`; return; }
         document.getElementById("go").disabled = true;
         try { await set(ref(db, `answers/${state.q}/${uid}`), { text, t: Date.now() }); editing = false; busy = false; shown = ""; render(); }

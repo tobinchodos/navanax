@@ -12,7 +12,7 @@ export const RULES = [
 ];
 
 // Questions, in order.
-//   type:    "text" (free answer) or "number" (live histogram)
+//   type:    "text" (free answer), "number" (live histogram) or "choice" (buttons; set options)
 //   answer:  for number questions, the correct value, marked on the histogram at reveal
 //   scale:   "log" for number questions whose guesses span many orders of magnitude
 //   reveal:  what the screen shows after you press Next: { image, text, caption } or { chart: "file.json", text, caption }
@@ -22,6 +22,7 @@ export const RULES = [
 //   image:   a picture shown with the question
 //   note:    a smaller line under the question
 //   range:   [min, max] for number questions on a fixed scale (e.g. 0–10)
+//   whole:   number questions that only take whole numbers, 0 or more
 //   unit:    shown after numbers, e.g. "%"
 //   judged:  true for subjective questions: at reveal the host clicks the winning answer(s).
 //   On any reveal screen the host can click an answer to flip it between right and wrong.
@@ -167,6 +168,16 @@ export const QUESTIONS = [
     type: "text",
     q: "What’s something boomers say?",
     judged: true,
+  },
+  {
+    type: "choice",
+    q: "Without checking, can you remember what underwear you’re wearing?",
+    options: ["Yes", "No"],
+  },
+  {
+    type: "number",
+    q: "How many credit cards are in your name?",
+    whole: true,
   },
   {
     type: "text",

@@ -126,6 +126,12 @@ export const QUESTIONS = [
     judged: true,
   },
   {
+    type: "number",
+    q: "How old is Tobin?",
+    whole: true,
+    judged: true,
+  },
+  {
     type: "text",
     q: "Whose hand is this?",
     image: "bigbird-hand.jpg",

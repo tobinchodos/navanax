@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -22,7 +22,7 @@
 <script>setTimeout(()=>{const b=document.getElementById("app");if(b&&/^\s*Loading/.test(b.textContent))b.innerHTML='<p class="center msg">Still loading. <a href="" style="color:inherit">Tap to reload</a>.</p>'},12000)</script>
 <script type="module">
 addEventListener("unhandledrejection", (e) => { const m = String(e.reason?.message || e.reason); const box = document.getElementById("app"); if (box && /loading/i.test(box.textContent)) box.innerHTML = `<div class="msg">Can't reach the database.<br><small>${m.replace(/</g, "&lt;")}</small></div>`; });
-import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, ref, onValue, set, get, update } from "./common.js?v=5";
+import { configured, connect, QUESTIONS, HINT, esc, hasReveal, parseNum, fmtNum, seatsSVG, correctSet, scoreboard, isScored, revealedCount, ref, onValue, set, get, update } from "./common.js?v=6";
 const app = document.getElementById("app");
 const JOIN_URL = location.href.replace(/host\.html.*$/, "").replace(/[?#].*$/, "");
 const JOIN = JOIN_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -153,6 +153,16 @@ if (!configured) {
     if (wins) for (const c of wall.querySelectorAll(".card")) c.classList.toggle("ok", wins.has(c.dataset.id));
   }
 
+  // Small top-five leaderboard in the corner during play, once anything has been scored.
+  function miniBoard() {
+    const el = document.getElementById("lb");
+    if (!el) return;
+    const scored = QUESTIONS.slice(0, revealedCount(state, QUESTIONS)).some(isScored);
+    const rows = scored ? scoreboard(QUESTIONS, state, players, answers).slice(0, 5) : [];
+    el.innerHTML = rows.length ? `<div class="lbh">Leaderboard</div>` + rows.map((r, i) =>
+      `<div class="lbr"><span class="lbn">${i + 1}</span><span class="lbm">${esc(r.name)}</span><span class="lbp">${r.pts}</span></div>`).join("") : "";
+  }
+
   function boardHTML() {
     const rows = scoreboard(QUESTIONS, state, players, answers);
     const cols = QUESTIONS.map((Q, i) => (isScored(Q) ? i : -1)).filter((i) => i >= 0);
@@ -215,7 +225,7 @@ if (!configured) {
           <div class="top"><div><div class="label">${state.q + 1} / ${QUESTIONS.length}</div><h1>${esc(Q.q)}</h1></div>
             <div class="tally"><div class="n" id="n">0</div><div class="t">of <span id="tot">0</span> answered</div></div></div>
           ${body}
-          <div class="bottom">${joinStrip()}</div></div>`;
+          <div class="bottom"><div class="lb" id="lb"></div>${joinStrip()}</div></div>`;
         qr(Math.min(84, innerHeight * .09));
       }
       document.getElementById("n").textContent = list.length;
@@ -224,6 +234,7 @@ if (!configured) {
       const wins = reveal && isScored(Q) ? correctSet(Q, state.q, answers, state.marks) : null;
       if (hist) hist.innerHTML = histogram(Q, list, reveal, wins || new Set());
       fillWall(list, wins);
+      miniBoard();
       return;
     }
 

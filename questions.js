@@ -200,6 +200,11 @@ export const QUESTIONS = [
   },
   {
     type: "text",
+    q: "What wars have happened on Donald Trump’s watch?",
+    judged: true,
+  },
+  {
+    type: "text",
     q: "What’s something boomers say?",
     judged: true,
   },

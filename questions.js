@@ -125,4 +125,9 @@ export const QUESTIONS = [
     accept: ["recursive", "self-improvement", "self improvement"],
     reveal: { text: "Recursive Self-Improvement" },
   },
+  {
+    type: "text",
+    q: "Two years ago, instead of saying what we were grateful for, we all shared the worst pain we’d ever felt. Can you remember a single thing anyone said that day?",
+    judged: true,
+  },
 ];

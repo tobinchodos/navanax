@@ -122,3 +122,4 @@ button { cursor: pointer; }
 .split .wall.answers .card .gs { font-size: clamp(16px, 1.4vw, 24px); }
 .board { font-size: clamp(16px, min(2vw, 3.2vh), 32px); }
 .board td { padding: .5vh 8px; }
+[hidden] { display: none !important; }

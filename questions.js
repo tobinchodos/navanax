@@ -76,7 +76,7 @@ export const QUESTIONS = [
     q: "Whose hand is this?",
     image: "hand.jpg",
     accept: ["bush"],
-    reveal: { image: "bush.jpg", text: "George H. W. Bush", caption: "Official portrait, 1989. Public domain." },
+    reveal: { image: "bush.jpg", text: "George H. W. Bush", caption: "Hand: Bush gives troops a thumbs-up, Dec 31, 1992 (U.S. National Archives). Portrait: official, 1989. Both public domain." },
   },
   {
     type: "text",

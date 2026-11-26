@@ -129,7 +129,7 @@ export const QUESTIONS = [
     type: "number",
     q: "How old is Tobin?",
     whole: true,
-    judged: true,
+    answer: 40,
   },
   {
     type: "text",

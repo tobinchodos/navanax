@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "config": {
+      ".read": true,
+      "hostUid": {
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid"
+      }
+    },
+    "state": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === root.child('config/hostUid').val()"
+    },
+    "players": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === root.child('config/hostUid').val()",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 24"
+      }
+    },
+    "answers": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === root.child('config/hostUid').val()",
+      "$q": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && root.child('state/phase').val() === 'question' && (root.child('state/q').val() + '') === $q && root.child('players/' + $uid).exists()",
+          ".validate": "newData.isNumber()"
+        }
+      }
+    }
+  }
+}

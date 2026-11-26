@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4a0d1f">
+<title>Thanksgiving Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="phone">
+  <header><b>Thanksgiving Quiz</b><span id="me"></span></header>
+  <section id="view" style="display:flex;flex-direction:column;flex:1"><p class="center">Loading…</p></section>
+</main>
+<script type="module">
+import { configured, connect, QUESTIONS, scores, esc, LETTERS, ref, onValue, set } from "./common.js";
+const view = document.getElementById("view");
+const meEl = document.getElementById("me");
+const LEAF = `<svg class="leaf" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 58 28 78 18 72 40 94 44 76 58 86 76 62 70 56 92 50 78 44 92 38 70 14 76 24 58 6 44 28 40 22 18 42 28Z" fill="#ff7a2f"/><path d="M50 30V96" stroke="#f4b740" stroke-width="4" stroke-linecap="round"/></svg>`;
+
+if (!configured) {
+  view.innerHTML = `<p class="center">The quiz isn't connected yet. Check back soon.</p>`;
+} else {
+  const { db, uid } = await connect();
+  let state = null, players = {}, answers = {}, editing = false;
+
+  onValue(ref(db, "state"), (s) => { state = s.val() || { phase: "lobby", q: 0 }; render(); });
+  onValue(ref(db, "players"), (s) => { players = s.val() || {}; render(); });
+  onValue(ref(db, "answers"), (s) => { answers = s.val() || {}; render(); });
+
+  function render() {
+    if (!state || editing) return;
+    const me = players[uid];
+    meEl.textContent = me ? me.name : "";
+    if (!me) return joinView();
+    const Q = QUESTIONS[state.q];
+    const mine = answers[state.q]?.[uid];
+    if (state.phase === "lobby") {
+      view.innerHTML = `<div class="center">${LEAF}<h1>You're in, ${esc(me.name)}.</h1><p>Eyes on the big screen. The first question appears here when it starts.</p><button class="primary" id="rename" style="background:transparent;color:var(--dim);border:1px solid var(--line)">Change name</button></div>`;
+      document.getElementById("rename").onclick = () => joinView(me.name);
+    } else if ((state.phase === "question" || state.phase === "reveal") && Q) {
+      const reveal = state.phase === "reveal";
+      const hasAns = Q.answer !== undefined;
+      view.innerHTML = `
+        <p style="color:var(--gold);font-weight:700;margin-bottom:8px">Question ${state.q + 1} of ${QUESTIONS.length}</p>
+        <h2>${esc(Q.q)}</h2>
+        <div class="opts">${Q.options.map((o, i) => {
+          let c = "";
+          if (reveal && hasAns && i === Q.answer) c = "right";
+          else if (reveal && hasAns && i === mine) c = "wrong";
+          else if (i === mine) c = "sel";
+          return `<button class="opt ${c}" data-i="${i}" ${reveal ? "disabled" : ""}><span class="l">${LETTERS[i]}</span>${esc(o)}</button>`;
+        }).join("")}</div>
+        <p class="note">${reveal
+          ? (!hasAns ? "Votes are in." : mine === undefined ? "No answer this time." : mine === Q.answer ? "Correct! 🦃" : "Not quite.")
+          : mine === undefined ? "Tap your answer." : "Locked in. You can change it until time's up."}</p>`;
+      if (!reveal) view.querySelectorAll(".opt").forEach((b) => b.onclick = () => {
+        const i = +b.dataset.i;
+        answers[state.q] = { ...(answers[state.q] || {}), [uid]: i };
+        render();
+        set(ref(db, `answers/${state.q}/${uid}`), i).catch(() => {
+          view.querySelector(".note").textContent = "That didn't go through. Answers may be closed.";
+        });
+      });
+    } else if (state.phase === "final") {
+      const board = scores(QUESTIONS, answers, players, state);
+      const rank = board.findIndex((r) => r.id === uid) + 1;
+      const pts = board.find((r) => r.id === uid)?.pts ?? 0;
+      view.innerHTML = `<div class="center">${LEAF}<div class="big">${pts}</div><p style="margin-top:8px">point${pts === 1 ? "" : "s"}, ${ordinal(rank)} of ${board.length}</p><h1>Happy Thanksgiving!</h1></div>`;
+    } else {
+      view.innerHTML = `<p class="center">Hang tight…</p>`;
+    }
+  }
+
+  function joinView(prev = "") {
+    editing = true;
+    view.innerHTML = `<div class="center" style="text-align:left">${LEAF}<h1>Join the quiz</h1><p>Your name shows up on the big screen.</p>
+      <form class="field" id="f"><input id="name" maxlength="24" autocomplete="given-name" placeholder="Your name" value="${esc(prev)}" required><button class="primary" id="go">Join</button></form></div>`;
+    const f = document.getElementById("f"), inp = document.getElementById("name");
+    inp.focus();
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = inp.value.trim().slice(0, 24);
+      if (!name) return;
+      document.getElementById("go").disabled = true;
+      try { await set(ref(db, `players/${uid}`), { name, t: Date.now() }); editing = false; render(); }
+      catch { document.getElementById("go").disabled = false; inp.setCustomValidity("Couldn't join. Try again."); inp.reportValidity(); }
+    };
+  }
+  const ordinal = (n) => n + (["th","st","nd","rd"][(n % 100 - 20) % 10] || ["th","st","nd","rd"][n % 100] || "th");
+}
+</script>
+</body>
+</html>

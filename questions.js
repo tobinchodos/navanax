@@ -38,6 +38,11 @@ export const QUESTIONS = [
     },
   },
   {
+    type: "text",
+    q: "What’s your favorite meal at the Thanksgiving table?",
+    judged: true,
+  },
+  {
     type: "number",
     q: "How old is Danny Chodos?",
     answer: 81,
@@ -90,8 +95,35 @@ export const QUESTIONS = [
   },
   {
     type: "text",
+    q: "Whose hand is this?",
+    image: "holmes-hand.jpg",
+    accept: ["holmes"],
+    reveal: {
+      image: "holmes.jpg",
+      text: "Elizabeth Holmes",
+      caption: "TechCrunch Disrupt, Sept 8, 2014. Photo: TechCrunch, CC BY 2.0 (cropped for the question).",
+    },
+  },
+  {
+    type: "text",
+    q: "Whose hand is this?",
+    image: "bigbird-hand.jpg",
+    accept: ["big bird", "bigbird"],
+    reveal: {
+      image: "bigbird.jpg",
+      text: "Big Bird",
+      caption: "Photo: Tony Alter, CC BY 2.0 (cropped for the question).",
+    },
+  },
+  {
+    type: "text",
     q: "What is one thing the other side of the political spectrum got right recently?",
     note: "The right if you lean left, the left if you lean right.",
+    judged: true,
+  },
+  {
+    type: "text",
+    q: "What is one thing your own side of the political spectrum got wrong recently?",
     judged: true,
   },
   {

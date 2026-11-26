@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
 <main class="phone">
@@ -54,10 +54,30 @@ if (!configured) {
         + (Q.figure === "seats" ? seatsSVG() : "")
         + (Q.quote ? `<blockquote>${esc(Q.quote.text)}<cite>${esc(Q.quote.cite)}</cite></blockquote>` : "");
       if (key.endsWith("sent")) {
-        view.innerHTML = head + (mine ? `<div class="sent">${esc(mine)}</div>` : "")
+        const myc = answers[state.q]?.[uid]?.comment;
+        view.innerHTML = head + (mine ? `<div class="sent">${esc(mine)}${myc ? `<br><span style="color:var(--dim)">${esc(myc)}</span>` : ""}</div>` : "")
           + (state.phase === "question" ? `<button class="ghost" id="edit">Change answer</button>` : `<p>Answers are closed. Look up.</p>`);
         const b = document.getElementById("edit");
         if (b) b.onclick = () => { editing = true; render(); };
+        return;
+      }
+      if (Q.type === "choice" && Q.comment) {
+        const prev = answers[state.q]?.[uid] || {};
+        let pick = prev.text || "";
+        view.innerHTML = head + `<form class="field" id="f"><div class="choices ${Q.options.length > 2 ? "stack" : ""}">${Q.options.map((o) => `<button type="button" class="choice ${pick === o ? "on" : ""}" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+          <textarea id="c" maxlength="280" placeholder="Comment (optional)">${esc(prev.comment || "")}</textarea>
+          <p class="err" id="msg"></p><button class="primary" id="go">Send</button></form>`;
+        const f = document.getElementById("f"), c = document.getElementById("c"), msg = document.getElementById("msg");
+        view.querySelectorAll(".choice").forEach((b) => b.onclick = () => { busy = true; pick = b.dataset.o; view.querySelectorAll(".choice").forEach((x) => x.classList.toggle("on", x === b)); });
+        c.oninput = () => { busy = true; };
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          if (!pick) { msg.textContent = `Pick ${Q.options.join(" or ")}.`; return; }
+          const comment = c.value.trim().slice(0, 280);
+          document.getElementById("go").disabled = true;
+          try { await set(ref(db, `answers/${state.q}/${uid}`), { text: pick, ...(comment ? { comment } : {}), t: Date.now() }); editing = false; busy = false; shown = ""; render(); }
+          catch { msg.textContent = "Didn't go through. Answers may be closed."; document.getElementById("go").disabled = false; }
+        };
         return;
       }
       if (Q.type === "choice") {

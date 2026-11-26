@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=19">
+<link rel="stylesheet" href="styles.css?v=21">
 <link rel="preload" as="image" href="navanax.jpg">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
@@ -208,8 +208,8 @@ if (!configured) {
     if (!el) return;
     const scored = QUESTIONS.slice(0, revealedCount(state, QUESTIONS)).some(isScored);
     const rows = scored ? scoreboard(QUESTIONS, state, players, answers).slice(0, 5) : [];
-    el.innerHTML = rows.length ? `<div class="lbh">Leaderboard</div>` + rows.map((r, i) =>
-      `<div class="lbr"><span class="lbn">${i + 1}</span><span class="lbm">${esc(r.name)}</span><span class="lbp">${r.pts}</span></div>`).join("") : "";
+    el.innerHTML = rows.length ? `<div class="lbh">Leaderboard</div><div class="lbline">` + rows.map((r, i) =>
+      `<span class="lbr"><span class="lbn">${i + 1}</span> <span class="lbm">${esc(r.name)}</span> <span class="lbp">${r.pts}</span></span>`).join("") + `</div>` : "";
   }
 
   function boardHTML(still) {
@@ -281,6 +281,8 @@ if (!configured) {
           body = `<div class="revealwrap ${Q.type === "choice" ? "withbars" : ""}"><div class="reveal ${pic ? "" : "solo"}">${pic}
             <div><div class="big">${esc(R.text || "")}</div>${R.caption ? `<div class="cap">${esc(R.caption)}</div>` : ""}</div></div>
             ${Q.type === "choice" ? `<div class="histbox" id="hist"></div>` : `<div class="wall answers mini" id="wall"></div>`}</div>`;
+        } else if (Q.type === "choice" && Q.comment) {
+          body = `<div class="split"><div class="histbox" id="hist"></div><div class="wall answers" id="cwall" style="align-content:flex-start"></div></div>`;
         } else if (num || Q.type === "choice") {
           body = extra ? `<div class="split" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)"><div style="align-self:center">${extra}</div><div class="histbox" id="hist"></div></div>` : `<div class="histbox" id="hist"></div>`;
         } else {
@@ -300,6 +302,12 @@ if (!configured) {
       const wins = reveal && isScored(Q) ? correctSet(Q, state.q, answers, state.marks) : null;
       if (hist) hist.innerHTML = Q.type === "choice" ? choiceBars(Q, list, wins || new Set(), reveal) : histogram(Q, list, reveal, wins || new Set());
       fillWall(list, wins);
+      const cwall = document.getElementById("cwall");
+      if (cwall) {
+        const withC = list.filter((r) => r.comment);
+        cwall.innerHTML = withC.length ? withC.map((r) => `<div class="card"><div class="nm">${esc(nameOf(r.id))} · ${esc(r.text)}</div><div class="gs">${esc(r.comment)}</div></div>`).join("")
+          : `<div class="empty">Comments will appear here.</div>`;
+      }
       miniBoard();
       return;
     }

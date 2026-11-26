@@ -192,3 +192,12 @@ button { cursor: pointer; }
 .bigjoin .qr { background: #fff; padding: 14px; line-height: 0; }
 .bigjoin .url { text-align: center; color: var(--dim); font-size: clamp(16px, 1.6vw, 28px); }
 .bigjoin .url b { color: var(--ink); font-weight: 500; }
+.choice-hist .cols { padding-top: clamp(40px, 4.4vw, 72px); }
+
+/* one-line leaderboard so charts get more height */
+.lb { width: auto; flex: 1 1 auto; align-self: flex-end; }
+.lbh { border-bottom: 0; padding-bottom: 2px; }
+.lbline { display: flex; flex-wrap: wrap; gap: 6px clamp(14px, 2vw, 32px); font-size: clamp(15px, 1.3vw, 22px); }
+.lbr { display: inline-flex; gap: 6px; padding: 0; }
+.lbr:first-child .lbm, .lbr:first-child .lbp { font-weight: 600; }
+.blk { min-height: 0; line-height: 1.1; }

@@ -13,7 +13,8 @@ export const RULES = [
 ];
 
 // Questions, in order.
-//   type:    "text" (free answer), "number" (live histogram) or "choice" (buttons; set options, and correct for the right one)
+//   type:    "text" (free answer), "number" (live histogram) or "choice" (buttons; set options, and correct for the right one;
+//            comment: true adds an optional comment box)
 //   answer:  for number questions, the correct value, marked on the histogram at reveal
 //   scale:   "log" for number questions whose guesses span many orders of magnitude
 //   reveal:  what the screen shows after you press Next: { image, text, caption } or { chart: "file.json", text, caption }
@@ -250,6 +251,13 @@ export const QUESTIONS = [
   {
     type: "text",
     q: "Two years ago, instead of saying what we were grateful for, we all shared the worst pain we’d ever felt. Can you remember a single thing anyone said that day?",
+    judged: true,
+  },
+  {
+    type: "choice",
+    q: "Have you ever had your heart broken?",
+    options: ["Yes", "No"],
+    comment: true,
     judged: true,
   },
 ];
